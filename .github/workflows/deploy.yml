@@ -74,10 +74,10 @@ jobs:
           echo ${{ secrets.DOCKER_PASSWORD }} | sudo docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
           
           # Pull latest images
-          sudo -E docker-compose pull
+          sudo -E docker compose pull
           
           # Restart containers
-          sudo -E docker-compose up -d
+          sudo -E docker compose up -d
           
           # Cleanup unused images
           sudo docker image prune -f
