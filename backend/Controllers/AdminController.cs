@@ -75,7 +75,7 @@ namespace backend.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("students/all")]
-        public async Task<IActionResult> GetStudents([FromQuery] string? className = null)
+        public async Task<IActionResult> GetStudents([FromQuery] string? className = null, [FromQuery] int page = 1, [FromQuery] int limit = 10)
         {
             try
             {
@@ -89,22 +89,36 @@ namespace backend.Controllers
                     query = query.Where(u => u.Class == className);
                 }
 
-                // Execute query
+                // Count total items
+                var totalCount = await query.CountAsync();
+
+                // Validation
+                if (page < 1) page = 1;
+                if (limit < 1) limit = 10;
+                if (limit > 100) limit = 100;
+
+                // Execute query with pagination
                 var students = await query
                     .Include(u => u.Wallet)
+                    .OrderBy(u => u.StudentCode) // Ensure consistent ordering
+                    .Skip((page - 1) * limit)
+                    .Take(limit)
                     .Select(u => new StudentDto
                     {
-                        StudentCode = u.StudentCode,
-                        FullName = u.FullName,
-                        Email = u.Email,
-                        Class = u.Class,
+                        StudentCode = u.StudentCode ?? "",
+                        FullName = u.FullName ?? "",
+                        Email = u.Email ?? "",
+                        Class = u.Class ?? "",
                         DateOfBirth = u.DateOfBirth,
-                        WalletAddress = u.Wallet.Address,
-                        WalletBalance = u.Wallet.Balance,
+                        WalletAddress = u.Wallet != null ? u.Wallet.Address : "",
+                        WalletBalance = u.Wallet != null ? u.Wallet.Balance : 0,
                     })
                     .ToListAsync();
 
-                return Ok(students);
+                // Return PagedResult
+                var result = new PagedResult<StudentDto>(students, totalCount, page, limit);
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -408,23 +422,42 @@ namespace backend.Controllers
         // 🔹 Lấy danh sách tất cả giáo viên
         [Authorize(Roles = "Admin")]
         [HttpGet("teachers")]
-        public async Task<IActionResult> GetTeachers()
+        public async Task<IActionResult> GetTeachers([FromQuery] int page = 1, [FromQuery] int limit = 10)
         {
-            var teachers = await _userManager.Users
-                .Where(u => u.Role == "Teacher")
-                .OrderBy(u => u.TeacherCodes)
-                .Select(u => new
-                {
-                    u.Id,
-                    u.FullName,
-                    u.Email,
-                    TeacherCode = u.TeacherCodes,
-                    u.PhoneNumber
+            try
+            {
+                var query = _userManager.Users
+                    .Where(u => u.Role == "Teacher");
 
-                })
-                .ToListAsync();
+                var totalCount = await query.CountAsync();
 
-            return Ok(teachers);
+                if (page < 1) page = 1;
+                if (limit < 1) limit = 10;
+                if (limit > 100) limit = 100;
+
+                var teachers = await query
+                    .OrderBy(u => u.TeacherCodes)
+                    .Skip((page - 1) * limit)
+                    .Take(limit)
+                    .Select(u => new TeacherDto
+                    {
+                        Id = u.Id,
+                        FullName = u.FullName,
+                        Email = u.Email,
+                        TeacherCode = u.TeacherCodes,
+                        PhoneNumber = u.PhoneNumber
+                    })
+                    .ToListAsync();
+
+                var result = new PagedResult<TeacherDto>(teachers, totalCount, page, limit);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting teachers list");
+                return StatusCode(500, new { Message = "Internal server error" });
+            }
         }
 
 

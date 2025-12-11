@@ -12,10 +12,18 @@ export interface Product extends ProductDto {
     productId: string;
 }
 
+export interface PagedResult<T> {
+    items: T[];
+    totalCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalPages: number;
+}
+
 export const staffProductService = {
     // Get all products
-    async getAll(): Promise<Product[]> {
-        return httpClient<Product[]>("/staff/products");
+    async getAll(page = 1, limit = 10): Promise<PagedResult<Product>> {
+        return httpClient<PagedResult<Product>>(`/staff/products?page=${page}&limit=${limit}`);
     },
 
     // Get product by ID

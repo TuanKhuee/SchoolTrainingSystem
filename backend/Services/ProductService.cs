@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using backend.Models.Products;
+using backend.DTOs;
 using Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,19 @@ namespace backend.Services
         public ProductService(ApplicationDbContext db) { _db = db; }
 
         public async Task<List<Products>> GetAllAsync() => await _db.Products.ToListAsync();
+
+        public async Task<PagedResult<Products>> GetPagedAsync(int page, int limit)
+        {
+            var query = _db.Products.AsQueryable();
+            var total = await query.CountAsync();
+            var items = await query.OrderBy(p => p.Name) // Default order
+                                   .Skip((page - 1) * limit)
+                                   .Take(limit)
+                                   .ToListAsync();
+
+            return new PagedResult<Products>(items, total, page, limit);
+        }
+
         public async Task<Products?> GetByIdAsync(Guid id) => await _db.Products.FindAsync(id);
 
         public async Task<Products> CreateAsync(Products p)

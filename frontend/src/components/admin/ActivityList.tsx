@@ -17,22 +17,27 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DeleteActivityDialog } from "./DeleteActivityDialog";
+import { Pagination } from "@/components/ui/pagination";
 
 export const ActivityList = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
-    null
-  );
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const fetchActivities = async () => {
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const LIMIT = 10;
+
+  const fetchActivities = async (page = currentPage) => {
     setIsLoading(true);
     try {
-      const data = await adminService.getActivities();
-      setActivities(data);
+      const response = await adminService.getActivities(page, LIMIT);
+      setActivities(response.items);
+      setTotalPages(response.totalPages);
       setError(null);
     } catch (err) {
       setError(
@@ -46,8 +51,12 @@ export const ActivityList = () => {
   };
 
   useEffect(() => {
-    fetchActivities();
-  }, []);
+    fetchActivities(currentPage);
+  }, [currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   // Format date to readable format
   const formatDate = (dateString: string) => {
@@ -282,15 +291,25 @@ export const ActivityList = () => {
           </table>
         </div>
       </div>
+      {/* Pagination */}
+      <div className="p-4 border-t dark:border-gray-700">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      </div>
+    </div >
 
-      {selectedActivity && (
+      { selectedActivity && (
         <DeleteActivityDialog
           activity={selectedActivity}
           isOpen={deleteDialogOpen}
           onClose={() => setDeleteDialogOpen(false)}
           onSuccess={handleDeleteSuccess}
         />
-      )}
+      )
+}
     </>
   );
 };

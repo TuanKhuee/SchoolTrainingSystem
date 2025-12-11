@@ -39,8 +39,8 @@ export const adminService = {
     return http.post("/admin/Activities", activityData);
   },
 
-  async getActivities(): Promise<Activity[]> {
-    return http.get("/admin/Activities");
+  async getActivities(page: number = 1, limit: number = 10): Promise<{ items: Activity[]; totalCount: number; totalPages: number }> {
+    return http.get(`/admin/Activities?page=${page}&limit=${limit}`);
   },
 
   async getActivity(id: string): Promise<Activity> {
@@ -163,16 +163,25 @@ export const adminService = {
     );
   },
 
-  // Get all students
-  async getAllStudents(className?: string): Promise<Student[]> {
-    let url = "/admin/students/all";
+  // Get all students with pagination
+  async getAllStudents(
+    className: string = "all",
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ items: Student[]; totalCount: number; totalPages: number }> {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
     if (className && className !== "all") {
-      url += `?className=${encodeURIComponent(className)}`;
+      queryParams.append("className", className);
     }
-    return http.get(url);
+
+    return http.get(`/admin/students/all?${queryParams.toString()}`);
   },
 
-  // Get all unique classes
+  // Get all valid classes
   async getAllClasses(): Promise<string[]> {
     return http.get("/admin/classes");
   },

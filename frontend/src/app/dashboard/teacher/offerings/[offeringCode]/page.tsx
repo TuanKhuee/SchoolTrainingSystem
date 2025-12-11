@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Users, CheckSquare, GraduationCap, ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
+import { Pagination } from "@/components/ui/pagination";
 
 interface Student {
     id: string;
@@ -40,13 +41,21 @@ interface StudentGrade {
     letterGrade?: string;
 }
 
+interface PagedStudentResult {
+    items: Student[];
+    totalCount: number;
+    totalPages: number;
+    pageIndex: number;
+    pageSize: number;
+}
+
 interface OfferingDetails {
     offeringCode: string;
     courseCode: string;
     courseName: string;
     semesterName: string;
     schoolYear: string;
-    students?: Student[];
+    students?: PagedStudentResult | Student[]; // Handle both for safety/transition
 }
 
 // Disable prerendering for this page since it requires authentication
@@ -68,18 +77,38 @@ export default function OfferingDetailsPage() {
     const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
     const [isEditingGrades, setIsEditingGrades] = useState(false);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const LIMIT = 10;
+
     useEffect(() => {
         if (user && offeringCode) {
-            fetchData();
+            fetchData(currentPage);
         }
-    }, [user, offeringCode, activeTab]);
+    }, [user, offeringCode, activeTab, currentPage]);
 
-    const fetchData = async () => {
+    const fetchData = async (page = 1) => {
         setLoading(true);
         try {
             if (activeTab === "students") {
-                const data = await http.get<OfferingDetails>(`/teacher/course/offering/${offeringCode}/students`);
-                setOffering(data);
+                const data = await http.get<any>(`/teacher/course/offering/${offeringCode}/students?page=${page}&limit=${LIMIT}`);
+                // API now returns { offeringCode, ..., students: { items: [], ... } }
+
+                // Handle structure adjustment if needed based on API response casing
+                const studentsData = data.students || data.Students;
+
+                if (studentsData && studentsData.items) {
+                    setOffering({ ...data, students: studentsData });
+                    setTotalPages(studentsData.totalPages);
+                } else if (Array.isArray(studentsData)) {
+                    // Fallback for non-paginated response
+                    setOffering({ ...data, students: { items: studentsData, totalCount: studentsData.length, totalPages: 1, pageIndex: 1, pageSize: LIMIT } });
+                    setTotalPages(1);
+                } else {
+                    setOffering(data); // Unexpected structure
+                }
+
             } else if (activeTab === "attendance") {
                 const data = await http.get<any>(`/teacher/course/offering/${offeringCode}/attendance`);
                 setOffering({
@@ -93,7 +122,7 @@ export default function OfferingDetailsPage() {
             } else if (activeTab === "grades") {
                 const [gradesResponse, offeringData] = await Promise.all([
                     http.get<any[]>(`/teacher/course/offering/grades/classification?offeringCode=${offeringCode}`),
-                    http.get<OfferingDetails>(`/teacher/course/offering/${offeringCode}/students`)
+                    http.get<any>(`/teacher/course/offering/${offeringCode}/students?page=1&limit=1`) // Fetch minimal student data for offering info
                 ]);
 
                 // Map data directly from API response
@@ -111,7 +140,14 @@ export default function OfferingDetailsPage() {
 
                 setGradesData(gradesWithClassification);
                 if (!offering) {
-                    setOffering(offeringData);
+                    // Ensure compatible structure
+                    setOffering({
+                        offeringCode: offeringData.offeringCode,
+                        courseCode: offeringData.courseCode,
+                        courseName: offeringData.courseName,
+                        semesterName: offeringData.semesterName,
+                        schoolYear: offeringData.schoolYear
+                    });
                 }
             }
         } catch (error) {
@@ -119,6 +155,10 @@ export default function OfferingDetailsPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
     };
 
     const handleTakeAttendance = async () => {
@@ -296,28 +336,39 @@ export default function OfferingDetailsPage() {
 
                 <div className="p-6">
                     {activeTab === "students" && (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                                        <th className="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">STT</th>
-                                        <th className="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Mã SV</th>
-                                        <th className="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Họ và tên</th>
-                                        <th className="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Ngành</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {offering?.students?.map((student, index) => (
-                                        <tr key={student.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                            <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{index + 1}</td>
-                                            <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{student.studentCode}</td>
-                                            <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{student.fullName}</td>
-                                            <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{student.majorCode}</td>
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                                            <th className="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">STT</th>
+                                            <th className="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Mã SV</th>
+                                            <th className="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Họ và tên</th>
+                                            <th className="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Ngành</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        {/* Helper function or check for array items vs flat array */}
+                                        {(offering?.students && 'items' in offering.students ? offering.students.items : (Array.isArray(offering?.students) ? offering?.students : []))?.map((student, index) => (
+                                            <tr key={student.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{(currentPage - 1) * LIMIT + index + 1}</td>
+                                                <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{student.studentCode}</td>
+                                                <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{student.fullName}</td>
+                                                <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{student.majorCode}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {/* Pagination */}
+                            <div className="py-4 border-t dark:border-gray-700">
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={handlePageChange}
+                                />
+                            </div>
+                        </>
                     )}
 
                     {activeTab === "attendance" && (

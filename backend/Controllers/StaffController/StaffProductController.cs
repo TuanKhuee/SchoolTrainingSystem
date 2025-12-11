@@ -12,7 +12,7 @@ namespace backend.Controllers.StaffController
 {
     [ApiController]
     [Route("api/staff/products")]
-    
+
     public class StaffProductController : ControllerBase
     {
         private readonly ProductService _service;
@@ -20,7 +20,8 @@ namespace backend.Controllers.StaffController
 
         [Authorize(Roles = "Staff,Student")]
         [HttpGet]
-        public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int limit = 10)
+            => Ok(await _service.GetPagedAsync(page, limit));
 
         [Authorize(Roles = "Staff,Student")]
         [HttpGet("{id}")]

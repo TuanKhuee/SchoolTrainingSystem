@@ -7,14 +7,9 @@ import { useAdminAuth } from "@/lib/admin.utils";
 import { Users, Mail, Phone, Calendar, Plus, Pencil, X, Key } from "lucide-react";
 import Link from "next/link";
 
-interface Teacher {
-    id: string;
-    fullName: string;
-    email: string;
-    teacherCode: string;
-    phoneNumber?: string;
-    createdAt: string;
-}
+import { Pagination } from "@/components/ui/pagination";
+import { adminService } from "@/services/admin.service";
+import { Teacher } from "@/types/admin";
 
 interface UpdateTeacherForm {
     fullName: string;
@@ -32,21 +27,31 @@ export default function TeachersListPage() {
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
-    useEffect(() => {
-        fetchTeachers();
-    }, []);
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const LIMIT = 10;
 
-    const fetchTeachers = async () => {
+    useEffect(() => {
+        fetchTeachers(currentPage);
+    }, [currentPage]);
+
+    const fetchTeachers = async (page: number) => {
         setLoading(true);
         try {
-            const data = await http.get<Teacher[]>("/admin/teachers");
-            setTeachers(data);
+            const response = await adminService.getAllTeachers(page, LIMIT);
+            setTeachers(response.items);
+            setTotalPages(response.totalPages);
         } catch (error) {
             console.error("Error fetching teachers:", error);
             alert("Lỗi khi tải danh sách giáo viên");
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
     };
 
     const handleEdit = (teacher: Teacher) => {
@@ -231,6 +236,14 @@ export default function TeachersListPage() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                    {/* Pagination */}
+                    <div className="p-4 border-t dark:border-gray-700">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
                     </div>
                 </div>
             </div>

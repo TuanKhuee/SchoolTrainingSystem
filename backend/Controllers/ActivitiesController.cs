@@ -10,6 +10,7 @@ using Services;
 using Data;
 using backend.Services;
 using Microsoft.EntityFrameworkCore;
+using backend.DTOs;
 using DTOs;
 using DTOs.ActivityDto;
 
@@ -46,13 +47,26 @@ namespace backend.Controllers
 
         // GET: api/admin/activities
         [HttpGet]
-        public async Task<IActionResult> GetAllActivities()
+        public async Task<IActionResult> GetAllActivities([FromQuery] int page = 1, [FromQuery] int limit = 10)
         {
-            var activities = await _context.Activities
-                .Where(a => a.IsActive)
+            var query = _context.Activities
+                .Where(a => a.IsActive);
+
+            var totalCount = await query.CountAsync();
+
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 10;
+            if (limit > 100) limit = 100;
+
+            var activities = await query
+                .OrderByDescending(a => a.StartDate) // Best practice: order by date descending
+                .Skip((page - 1) * limit)
+                .Take(limit)
                 .ToListAsync();
 
-            return Ok(activities);
+            var result = new PagedResult<Activity>(activities, totalCount, page, limit);
+
+            return Ok(result);
         }
 
         // GET: api/admin/activities/5

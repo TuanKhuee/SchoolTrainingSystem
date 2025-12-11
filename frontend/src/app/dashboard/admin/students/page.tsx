@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { XCircle, Loader2, Users, Coins, Pencil, Trash, X, Key } from "lucide-react";
 import { format } from "date-fns";
 import { AdminLayout } from "@/components/layouts/AdminLayout";
@@ -47,15 +48,18 @@ export default function StudentsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [classes, setClasses] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const LIMIT = 10;
 
-  async function fetchStudents(className?: string) {
+  async function fetchStudents(className = selectedClass, page = currentPage) {
     try {
       setIsLoading(true);
       setError(null);
 
-      const filterClass = className || selectedClass;
-      const studentsData = await adminService.getAllStudents(filterClass);
-      setStudents(studentsData);
+      const response = await adminService.getAllStudents(className, page, LIMIT);
+      setStudents(response.items);
+      setTotalPages(response.totalPages);
     } catch (err) {
       console.error("Error fetching students:", err);
       setError("Failed to load students. Please try again.");
@@ -66,8 +70,8 @@ export default function StudentsPage() {
 
   async function fetchClasses() {
     try {
-      const classesData = await adminService.getAllClasses();
-      setClasses(classesData);
+      const classList = await adminService.getAllClasses();
+      setClasses(classList);
     } catch (err) {
       console.error("Error fetching classes:", err);
     }
@@ -75,13 +79,22 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchClasses();
-    fetchStudents();
-  }, []);
+    fetchStudents(selectedClass, currentPage);
+  }, []); // Initial load
+
+  useEffect(() => {
+    // Re-fetch when class or page changes
+    // Using a ref or just dependency array logic to avoid infinite loop
+    fetchStudents(selectedClass, currentPage);
+  }, [selectedClass, currentPage]);
 
   const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newClass = e.target.value;
-    setSelectedClass(newClass);
-    fetchStudents(newClass);
+    setSelectedClass(e.target.value);
+    setCurrentPage(1); // Reset to page 1 when filter changes
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   const handleEdit = (student: Student) => {
@@ -307,7 +320,16 @@ export default function StudentsPage() {
                     ))}
                   </TableBody>
                 </Table>
+
               </CardContent>
+              {/* Pagination */}
+              <div className="pb-6">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
             </Card>
           )}
         </div>

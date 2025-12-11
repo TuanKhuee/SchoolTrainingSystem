@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { staffProductService, Product, ProductDto } from "@/services/staff-product.service";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function StaffProductsPage() {
 
@@ -30,13 +31,26 @@ export default function StaffProductsPage() {
         imageUrl: "",
     });
 
-    const fetchProducts = async () => {
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const LIMIT = 10;
+
+    const fetchProducts = async (page = 1) => {
         setLoading(true);
         try {
             console.log("Fetching products...");
-            const data = await staffProductService.getAll();
+            const data = await staffProductService.getAll(page, LIMIT);
             console.log("Products fetched:", data);
-            setProducts(data);
+
+            if (data.items) {
+                setProducts(data.items);
+                setTotalPages(data.totalPages);
+            } else {
+                // Fallback if API returns array directly (backward compatibility or error)
+                setProducts(data as any);
+            }
+
         } catch (error: any) {
             console.error("Error fetching products:", error);
             toast.error("Lỗi", {
@@ -48,8 +62,12 @@ export default function StaffProductsPage() {
     };
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        fetchProducts(currentPage);
+    }, [currentPage]);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
 
     const handleOpenModal = (product?: Product) => {
         if (product) {
@@ -94,7 +112,7 @@ export default function StaffProductsPage() {
                 });
             }
             handleCloseModal();
-            fetchProducts();
+            fetchProducts(currentPage);
         } catch (error: any) {
             toast.error("Lỗi", {
                 description: error.message || "Có lỗi xảy ra",
@@ -109,7 +127,7 @@ export default function StaffProductsPage() {
             toast.success("Thành công", {
                 description: "Đã xóa sản phẩm",
             });
-            fetchProducts();
+            fetchProducts(currentPage);
         } catch (error: any) {
             toast.error("Lỗi", {
                 description: "Không thể xóa sản phẩm",
@@ -137,63 +155,75 @@ export default function StaffProductsPage() {
                                 <Loader2 className="h-8 w-8 animate-spin" />
                             </div>
                         ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Hình ảnh</TableHead>
-                                        <TableHead>Tên sản phẩm</TableHead>
-                                        <TableHead>Giá (VKU)</TableHead>
-                                        <TableHead>Kho</TableHead>
-                                        <TableHead className="text-right">Hành động</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {products.map((product) => (
-                                        <TableRow key={product.productId}>
-                                            <TableCell>
-                                                {product.imageUrl ? (
-                                                    <img
-                                                        src={product.imageUrl}
-                                                        alt={product.name}
-                                                        className="w-12 h-12 object-cover rounded"
-                                                    />
-                                                ) : (
-                                                    <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
-                                                        No img
-                                                    </div>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="font-medium">{product.name}</TableCell>
-                                            <TableCell>{product.price}</TableCell>
-                                            <TableCell>{product.stock}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleOpenModal(product)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                    onClick={() => handleDelete(product.productId)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    {products.length === 0 && (
+                            <>
+                                <Table>
+                                    <TableHeader>
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                                Chưa có sản phẩm nào
-                                            </TableCell>
+                                            <TableHead>STT</TableHead>
+                                            <TableHead>Hình ảnh</TableHead>
+                                            <TableHead>Tên sản phẩm</TableHead>
+                                            <TableHead>Giá (VKU)</TableHead>
+                                            <TableHead>Kho</TableHead>
+                                            <TableHead className="text-right">Hành động</TableHead>
                                         </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {products.map((product, index) => (
+                                            <TableRow key={product.productId}>
+                                                <TableCell>{(currentPage - 1) * LIMIT + index + 1}</TableCell>
+                                                <TableCell>
+                                                    {product.imageUrl ? (
+                                                        <img
+                                                            src={product.imageUrl}
+                                                            alt={product.name}
+                                                            className="w-12 h-12 object-cover rounded"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                                                            No img
+                                                        </div>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="font-medium">{product.name}</TableCell>
+                                                <TableCell>{product.price}</TableCell>
+                                                <TableCell>{product.stock}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleOpenModal(product)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => handleDelete(product.productId)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {products.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                    Chưa có sản phẩm nào
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+
+                                <div className="mt-4">
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        onPageChange={handlePageChange}
+                                    />
+                                </div>
+                            </>
                         )}
                     </CardContent>
                 </Card>

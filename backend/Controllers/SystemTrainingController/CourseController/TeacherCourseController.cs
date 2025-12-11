@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Data;
+using backend.DTOs;
 using backend.DTOs.SystemTrainingDto.CourseDto;
 using backend.Models.SystemTranings.Training;
 using backend.DTOs.SystemTrainingDto.TeacherDto;
@@ -62,16 +63,14 @@ namespace backend.Controllers.SystemTrainingController.CourseController
 
         // 🔹 Xem danh sách sinh viên trong lớp học phần theo OfferingCode
         [HttpGet("offering/{offeringCode}/students")]
-        public async Task<IActionResult> GetStudentsInOffering(string offeringCode)
+        public async Task<IActionResult> GetStudentsInOffering(string offeringCode, [FromQuery] int page = 1, [FromQuery] int limit = 10)
         {
-            var teacherId = User.FindFirstValue("UserId"); // Hoặc ClaimTypes.NameIdentifier nếu JWT dùng chuẩn này
+            var teacherId = User.FindFirstValue("UserId");
             if (string.IsNullOrEmpty(teacherId))
                 return Unauthorized(new { message = "Không thể xác định giáo viên." });
 
             var offering = await _context.CourseOfferings
                 .Where(o => o.OfferingCode == offeringCode && o.TeacherId == teacherId)
-                .Include(o => o.Registrations)
-                    .ThenInclude(r => r.Student)
                 .Include(o => o.Course)
                 .Include(o => o.Semester)
                 .FirstOrDefaultAsync();
@@ -79,14 +78,31 @@ namespace backend.Controllers.SystemTrainingController.CourseController
             if (offering == null)
                 return NotFound(new { message = "Không tìm thấy lớp học phần hoặc bạn không phải giáo viên lớp này." });
 
-            var students = offering.Registrations.Select(r => new StudentDto
-            {
-                Id = r.Student.Id,
-                FullName = r.Student != null ? r.Student.FullName : "",
-                StudentCode = r.Student != null ? r.Student.StudentCode : "",
-                MajorCode = r.Student != null ? r.Student.MajorCode : "",
-                RegisteredAt = r.RegisteredAt
-            }).ToList();
+            var query = _context.CourseRegistrations
+                .Where(r => r.CourseOfferingId == offering.Id)
+                .Include(r => r.Student);
+
+            var totalCount = await query.CountAsync();
+
+            if (page < 1) page = 1;
+            if (limit < 1) limit = 10;
+            if (limit > 100) limit = 100;
+
+            var students = await query
+                .OrderBy(r => r.Student.StudentCode)
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .Select(r => new StudentDto
+                {
+                    Id = r.Student.Id,
+                    FullName = r.Student != null ? (r.Student.FullName ?? "") : "",
+                    StudentCode = r.Student != null ? (r.Student.StudentCode ?? "") : "",
+                    MajorCode = r.Student != null ? (r.Student.MajorCode ?? "") : "",
+                    RegisteredAt = r.RegisteredAt
+                })
+                .ToListAsync();
+
+            var pagedStudents = new PagedResult<StudentDto>(students, totalCount, page, limit);
 
             return Ok(new
             {
@@ -95,7 +111,7 @@ namespace backend.Controllers.SystemTrainingController.CourseController
                 CourseName = offering.Course != null ? offering.Course.CourseName : "",
                 SemesterName = offering.Semester != null ? offering.Semester.Name : "",
                 SchoolYear = offering.Semester != null ? offering.Semester.SchoolYear : "",
-                Students = students
+                Students = pagedStudents
             });
         }
 
@@ -131,8 +147,8 @@ namespace backend.Controllers.SystemTrainingController.CourseController
                         Room = o.Room ?? "",
                         o.StartPeriod,
                         o.EndPeriod,
-                        SemesterName = o.Semester != null ? o.Semester.Name : "",
-                        SchoolYear = o.Semester != null ? o.Semester.SchoolYear : ""
+                        SemesterName = o.Semester != null ? (o.Semester.Name ?? "") : "",
+                        SchoolYear = o.Semester != null ? (o.Semester.SchoolYear ?? "") : ""
                     })
                 });
 
@@ -163,9 +179,9 @@ namespace backend.Controllers.SystemTrainingController.CourseController
             var students = offering.Registrations.Select(r => new
             {
                 StudentId = r.Student.Id,
-                StudentCode = r.Student != null ? r.Student.StudentCode : "",
-                FullName = r.Student != null ? r.Student.FullName : "",
-                MajorCode = r.Student != null ? r.Student.MajorCode : "",
+                StudentCode = r.Student != null ? (r.Student.StudentCode ?? "") : "",
+                FullName = r.Student != null ? (r.Student.FullName ?? "") : "",
+                MajorCode = r.Student != null ? (r.Student.MajorCode ?? "") : "",
                 Attendances = r.Attendances.Select(a => new
                 {
                     a.Date,
@@ -271,8 +287,8 @@ namespace backend.Controllers.SystemTrainingController.CourseController
             {
                 r.Id,
                 r.StudentId,
-                FullName = r.Student != null ? r.Student.FullName : "",
-                StudentCode = r.Student != null ? r.Student.StudentCode : "",
+                FullName = r.Student != null ? (r.Student.FullName ?? "") : "",
+                StudentCode = r.Student != null ? (r.Student.StudentCode ?? "") : "",
                 MidTerm = r.Score != null ? r.Score.Midterm : 0,
                 FinalTerm = r.Score != null ? r.Score.Final : 0,
                 Total = r.Score != null ? r.Score.Total : 0
