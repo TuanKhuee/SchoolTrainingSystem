@@ -11,6 +11,7 @@ import {
   TransactionHistoryRequest,
   TransactionHistoryResponse,
   TransactionDetailsResponse,
+  Teacher,
   TransactionSummary,
 } from "@/types/admin";
 
@@ -212,6 +213,14 @@ export const adminService = {
   // Get transaction summary
   async getTransactionSummary(): Promise<TransactionSummary> {
     return http.get("/admin/transaction-summary");
+  },
+
+  // Get all teachers with pagination
+  async getAllTeachers(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ items: Teacher[]; totalCount: number; totalPages: number }> {
+    return http.get(`/admin/teachers?page=${page}&limit=${limit}`);
   },
 
   // Get transaction details by ID
