@@ -290,18 +290,17 @@ export const ActivityList = () => {
             </tbody>
           </table>
         </div>
-      </div>
-      {/* Pagination */}
-      <div className="p-4 border-t dark:border-gray-700">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
-      </div>
-    </div >
+        {/* Pagination */}
+        <div className="p-4 border-t dark:border-gray-700">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      </div >
 
-      { selectedActivity && (
+      {selectedActivity && (
         <DeleteActivityDialog
           activity={selectedActivity}
           isOpen={deleteDialogOpen}
@@ -309,7 +308,7 @@ export const ActivityList = () => {
           onSuccess={handleDeleteSuccess}
         />
       )
-}
+      }
     </>
   );
 };
