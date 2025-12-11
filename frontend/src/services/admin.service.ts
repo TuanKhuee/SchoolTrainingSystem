@@ -164,8 +164,17 @@ export const adminService = {
   },
 
   // Get all students
-  async getAllStudents(): Promise<Student[]> {
-    return http.get("/admin/students/all");
+  async getAllStudents(className?: string): Promise<Student[]> {
+    let url = "/admin/students/all";
+    if (className && className !== "all") {
+      url += `?className=${encodeURIComponent(className)}`;
+    }
+    return http.get(url);
+  },
+
+  // Get all unique classes
+  async getAllClasses(): Promise<string[]> {
+    return http.get("/admin/classes");
   },
 
   // Get transaction history with optional filters

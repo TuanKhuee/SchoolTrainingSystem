@@ -43,14 +43,18 @@ export default function StudentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resettingPassword, setResettingPassword] = useState<Student | null>(null);
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
-  async function fetchStudents() {
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [classes, setClasses] = useState<string[]>([]);
+  const [selectedClass, setSelectedClass] = useState("all");
+
+  async function fetchStudents(className?: string) {
     try {
       setIsLoading(true);
       setError(null);
 
-      const studentsData = await adminService.getAllStudents();
+      const filterClass = className || selectedClass;
+      const studentsData = await adminService.getAllStudents(filterClass);
       setStudents(studentsData);
     } catch (err) {
       console.error("Error fetching students:", err);
@@ -60,9 +64,25 @@ export default function StudentsPage() {
     }
   }
 
+  async function fetchClasses() {
+    try {
+      const classesData = await adminService.getAllClasses();
+      setClasses(classesData);
+    } catch (err) {
+      console.error("Error fetching classes:", err);
+    }
+  }
+
   useEffect(() => {
+    fetchClasses();
     fetchStudents();
   }, []);
+
+  const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newClass = e.target.value;
+    setSelectedClass(newClass);
+    fetchStudents(newClass);
+  };
 
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
@@ -175,7 +195,7 @@ export default function StudentsPage() {
         </div>
       ) : (
         <div className="container mx-auto py-6 space-y-6">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">All Students</h1>
           </div>
 
@@ -187,13 +207,31 @@ export default function StudentsPage() {
             </Card>
           ) : (
             <Card>
-              <CardHeader>
-                <CardTitle>Student List</CardTitle>
-                <CardDescription>
-                  {students.length} student(s) in total
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="space-y-1">
+                  <CardTitle>Student List</CardTitle>
+                  <CardDescription>
+                    {students.length} student(s) in total
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 bg-background p-2 rounded-lg border shadow-sm">
+                  <span className="text-sm font-medium whitespace-nowrap px-2">Lọc theo lớp:</span>
+                  <select
+                    className="h-9 w-[250px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    value={selectedClass}
+                    onChange={handleClassChange}
+                  >
+                    <option value="all">Tất cả sinh viên</option>
+                    {classes.map((cls) => (
+                      <option key={cls} value={cls}>
+                        {cls}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </CardHeader>
               <CardContent>
+
                 <Table>
                   <TableHeader>
                     <TableRow>

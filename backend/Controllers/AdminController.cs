@@ -75,13 +75,22 @@ namespace backend.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("students/all")]
-        public async Task<IActionResult> GetStudents()
+        public async Task<IActionResult> GetStudents([FromQuery] string? className = null)
         {
             try
             {
-                // Lấy tất cả sinh viên với thông tin ví
-                var students = await _userManager.Users
-                    .Where(u => u.Role == "Student")
+                // Lấy query ban đầu
+                var query = _userManager.Users
+                    .Where(u => u.Role == "Student");
+
+                // Apply filter nếu có
+                if (!string.IsNullOrEmpty(className) && className != "all")
+                {
+                    query = query.Where(u => u.Class == className);
+                }
+
+                // Execute query
+                var students = await query
                     .Include(u => u.Wallet)
                     .Select(u => new StudentDto
                     {
@@ -100,6 +109,29 @@ namespace backend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while fetching students");
+                return StatusCode(500, new { Message = "Internal server error" });
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("classes")]
+        public async Task<IActionResult> GetClasses()
+        {
+            try
+            {
+                // Lấy danh sách các lớp duy nhất từ tất cả sinh viên
+                var classes = await _userManager.Users
+                    .Where(u => u.Role == "Student" && !string.IsNullOrEmpty(u.Class))
+                    .Select(u => u.Class)
+                    .Distinct()
+                    .OrderBy(c => c)
+                    .ToListAsync();
+
+                return Ok(classes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting classes list");
                 return StatusCode(500, new { Message = "Internal server error" });
             }
         }
