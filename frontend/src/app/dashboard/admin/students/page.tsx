@@ -209,7 +209,7 @@ export default function StudentsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="space-y-1">
-                  <CardTitle>Student List</CardTitle>
+                  <CardTitle>Student List (Updated)</CardTitle>
                   <CardDescription>
                     {students.length} student(s) in total
                   </CardDescription>
