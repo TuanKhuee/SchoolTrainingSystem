@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using backend.DTOs;
 using backend.DTOs.Transfer;
 using backend.Models.Products;
 using backend.Services;
@@ -21,7 +22,23 @@ namespace backend.Controllers.StaffController
         [Authorize(Roles = "Staff,Student")]
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] Guid? categoryId = null)
-            => Ok(await _service.GetPagedAsync(page, limit, categoryId));
+        {
+            var result = await _service.GetPagedAsync(page, limit, categoryId);
+
+            var dtoItems = result.Items.Select(p => new ProductDto
+            {
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                Stock = p.Stock,
+                ImageUrl = p.ImageUrl,
+                CategoryId = p.CategoryId,
+                CategoryName = p.Category?.Name
+            }).ToList();
+
+            var dtoResult = new PagedResult<ProductDto>(dtoItems, result.TotalCount, result.PageIndex, result.PageSize);
+            return Ok(dtoResult);
+        }
 
         [Authorize(Roles = "Staff,Student")]
         [HttpGet("{id}")]
