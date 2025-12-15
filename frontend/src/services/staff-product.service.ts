@@ -6,6 +6,8 @@ export interface ProductDto {
     price: number;
     stock: number;
     imageUrl?: string;
+    categoryId?: string;
+    categoryName?: string;
 }
 
 export interface Product extends ProductDto {

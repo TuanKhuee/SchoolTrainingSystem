@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { staffProductService, Product, ProductDto } from "@/services/staff-product.service";
+import { staffCategoryService, Category } from "@/services/staff-category.service";
 import { Pagination } from "@/components/ui/pagination";
 
 export default function StaffProductsPage() {
@@ -29,7 +30,9 @@ export default function StaffProductsPage() {
         price: 0,
         stock: 0,
         imageUrl: "",
+        categoryId: "",
     });
+    const [categories, setCategories] = useState<Category[]>([]);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -63,7 +66,17 @@ export default function StaffProductsPage() {
 
     useEffect(() => {
         fetchProducts(currentPage);
+        fetchCategories();
     }, [currentPage]);
+
+    const fetchCategories = async () => {
+        try {
+            const data = await staffCategoryService.getAll();
+            setCategories(data);
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
+    };
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -78,6 +91,7 @@ export default function StaffProductsPage() {
                 price: product.price,
                 stock: product.stock,
                 imageUrl: product.imageUrl || "",
+                categoryId: product.categoryId || "",
             });
         } else {
             setEditingProduct(null);
@@ -87,6 +101,7 @@ export default function StaffProductsPage() {
                 price: 0,
                 stock: 0,
                 imageUrl: "",
+                categoryId: "",
             });
         }
         setIsModalOpen(true);
@@ -162,6 +177,7 @@ export default function StaffProductsPage() {
                                             <TableHead>STT</TableHead>
                                             <TableHead>Hình ảnh</TableHead>
                                             <TableHead>Tên sản phẩm</TableHead>
+                                            <TableHead>Danh mục</TableHead>
                                             <TableHead>Giá (VKU)</TableHead>
                                             <TableHead>Kho</TableHead>
                                             <TableHead className="text-right">Hành động</TableHead>
@@ -185,6 +201,7 @@ export default function StaffProductsPage() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="font-medium">{product.name}</TableCell>
+                                                <TableCell>{product.categoryName || "-"}</TableCell>
                                                 <TableCell>{product.price}</TableCell>
                                                 <TableCell>{product.stock}</TableCell>
                                                 <TableCell className="text-right">
@@ -254,6 +271,22 @@ export default function StaffProductsPage() {
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Danh mục</label>
+                                    <select
+                                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                        value={formData.categoryId || ""}
+                                        onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                                    >
+                                        <option value="">Chọn danh mục</option>
+                                        {categories.map((c) => (
+                                            <option key={c.categoryId} value={c.categoryId}>
+                                                {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div>

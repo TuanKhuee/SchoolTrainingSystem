@@ -20,8 +20,8 @@ namespace backend.Controllers.StaffController
 
         [Authorize(Roles = "Staff,Student")]
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int limit = 10)
-            => Ok(await _service.GetPagedAsync(page, limit));
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] Guid? categoryId = null)
+            => Ok(await _service.GetPagedAsync(page, limit, categoryId));
 
         [Authorize(Roles = "Staff,Student")]
         [HttpGet("{id}")]
@@ -42,7 +42,8 @@ namespace backend.Controllers.StaffController
                 Description = dto.Description,
                 Price = dto.Price,
                 Stock = dto.Stock,
-                ImageUrl = dto.ImageUrl
+                ImageUrl = dto.ImageUrl,
+                CategoryId = dto.CategoryId
             };
             var created = await _service.CreateAsync(p);
             return CreatedAtAction(nameof(GetById), new { id = created.ProductId }, created);
@@ -58,7 +59,8 @@ namespace backend.Controllers.StaffController
                 Description = dto.Description,
                 Price = dto.Price,
                 Stock = dto.Stock,
-                ImageUrl = dto.ImageUrl
+                ImageUrl = dto.ImageUrl,
+                CategoryId = dto.CategoryId
             };
             var res = await _service.UpdateAsync(id, updated);
             if (res == null) return NotFound();

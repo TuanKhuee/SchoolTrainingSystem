@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { User, LogOut, Home, Package, ShoppingBag, Key } from "lucide-react";
+import { User, LogOut, Home, Package, ShoppingBag, Key, Tags } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 
 interface StaffLayoutProps {
@@ -29,6 +29,11 @@ const StaffLayout = ({ children }: StaffLayoutProps) => {
             href: "/staff/products",
             label: "Quản lý sản phẩm",
             icon: <Package className="w-5 h-5 mr-2" />,
+        },
+        {
+            href: "/staff/categories",
+            label: "Quản lý danh mục",
+            icon: <Tags className="w-5 h-5 mr-2" />,
         },
         {
             href: "/dashboard/change-password",

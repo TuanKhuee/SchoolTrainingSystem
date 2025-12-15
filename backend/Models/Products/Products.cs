@@ -17,5 +17,9 @@ namespace backend.Models.Products
         public int Stock { get; set; }
         public string? ImageUrl { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Foreign Key
+        public Guid? CategoryId { get; set; }
+        public Category? Category { get; set; }
     }
 }

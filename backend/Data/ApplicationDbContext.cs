@@ -40,6 +40,7 @@ namespace Data
         public DbSet<Attendance> Attendances { get; set; }
         public DbSet<Score> Scores { get; set; }
         public DbSet<Products> Products => Set<Products>();
+        public DbSet<Category> Categories => Set<Category>();
         public DbSet<CartItem> CartItems => Set<CartItem>();
         public DbSet<Order> Orders => Set<Order>();
         public DbSet<OrderItem> OrderItems => Set<OrderItem>();
@@ -205,6 +206,19 @@ namespace Data
                 entity.Property(p => p.Stock).IsRequired();
                 entity.Property(p => p.ImageUrl); // Removed MaxLength to support base64 images
                 entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(p => p.Category)
+                    .WithMany(c => c.Products)
+                    .HasForeignKey(p => p.CategoryId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // === CATEGORY ===
+            builder.Entity<Category>(entity =>
+            {
+                entity.HasKey(c => c.CategoryId);
+                entity.Property(c => c.Name).HasMaxLength(100).IsRequired();
+                entity.Property(c => c.Description).HasMaxLength(500);
             });
 
             // === ORDER ===

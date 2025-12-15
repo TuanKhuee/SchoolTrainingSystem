@@ -16,9 +16,15 @@ namespace backend.Services
 
         public async Task<List<Products>> GetAllAsync() => await _db.Products.ToListAsync();
 
-        public async Task<PagedResult<Products>> GetPagedAsync(int page, int limit)
+        public async Task<PagedResult<Products>> GetPagedAsync(int page, int limit, Guid? categoryId = null)
         {
-            var query = _db.Products.AsQueryable();
+            var query = _db.Products.Include(p => p.Category).AsQueryable();
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(p => p.CategoryId == categoryId.Value);
+            }
+
             var total = await query.CountAsync();
             var items = await query.OrderBy(p => p.Name) // Default order
                                    .Skip((page - 1) * limit)
@@ -46,6 +52,8 @@ namespace backend.Services
             p.Price = updated.Price;
             p.Stock = updated.Stock;
             p.ImageUrl = updated.ImageUrl;
+            p.CategoryId = updated.CategoryId;
+
             await _db.SaveChangesAsync();
             return p;
         }
