@@ -48,7 +48,7 @@ namespace Services
         {
             // 1. load student & staff
             var student = await _context.Users.Include(u => u.Wallet).FirstOrDefaultAsync(u => u.Id == studentId);
-            var staff = await _context.Users.Include(u => u.Wallet).FirstOrDefaultAsync(u => u.Role == "Staff");
+            var staff = await _context.Users.Include(u => u.Wallet).FirstOrDefaultAsync(u => u.Role == "Staff" && u.IsStaff == true);
 
             if (student?.Wallet == null) return new CheckoutResult(false, "Student wallet not found");
             if (staff?.Wallet == null) return new CheckoutResult(false, "Staff wallet not found");
