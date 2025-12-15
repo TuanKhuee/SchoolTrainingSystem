@@ -56,7 +56,7 @@ jobs:
         username: ${{ secrets.HOST_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: "docker-compose.yml"
-        target: "/app/educhain"
+        target: "/opt/SchoolTrainingSystem"
 
     - name: Deploy via SSH
       uses: appleboy/ssh-action@master
@@ -65,7 +65,7 @@ jobs:
         username: ${{ secrets.HOST_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd /app/educhain
+          cd /opt/SchoolTrainingSystem
           
           # Export Docker Username for docker-compose interpolation
           export DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
