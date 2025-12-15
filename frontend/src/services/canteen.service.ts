@@ -92,7 +92,6 @@ export const canteenService = {
         try {
             // Get user from localStorage (stored by auth.store.ts)
             const userStr = localStorage.getItem('user');
-            console.log("User data:", userStr);
 
             if (!userStr) {
                 console.warn("No user data found in localStorage");
@@ -101,7 +100,6 @@ export const canteenService = {
 
             const user = JSON.parse(userStr);
             const studentId = user?.id;
-            console.log("Student ID from user:", studentId);
 
             if (!studentId) {
                 console.warn("No student ID found in user object");
@@ -109,13 +107,14 @@ export const canteenService = {
             }
 
             const url = `/student/Student/history/${studentId}`;
-            console.log("Fetching orders from:", url);
-
             const result = await httpClient<Order[]>(url);
-            console.log("Orders received:", result);
-
             return result;
-        } catch (error) {
+        } catch (error: any) {
+            // If 404 (no orders found), return empty array
+            if (error?.message?.includes('No orders found') || error?.status === 404) {
+                console.log("No orders found for this student");
+                return [];
+            }
             console.error("Orders endpoint error:", error);
             return [];
         }
