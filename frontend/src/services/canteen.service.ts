@@ -1,5 +1,13 @@
 import { httpClient } from "@/lib/http-client";
 
+export interface PagedResult<T> {
+    items: T[];
+    totalCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalPages: number;
+}
+
 export interface Product {
     productId: string;
     name: string;
@@ -46,7 +54,8 @@ export interface OrderItem {
 export const canteenService = {
     // Get all products
     async getProducts(): Promise<Product[]> {
-        return httpClient<Product[]>("/staff/products");
+        const response = await httpClient<PagedResult<Product>>("/staff/products");
+        return response.items;
     },
 
     // Add item to cart
