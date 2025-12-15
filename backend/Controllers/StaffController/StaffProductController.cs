@@ -27,6 +27,7 @@ namespace backend.Controllers.StaffController
 
             var dtoItems = result.Items.Select(p => new ProductDto
             {
+                ProductId = p.ProductId,
                 Name = p.Name,
                 Description = p.Description,
                 Price = p.Price,
