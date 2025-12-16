@@ -7,7 +7,7 @@ import { activityService } from "@/services/activity.service";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Camera, Zap, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Camera, Zap, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +23,7 @@ interface Html5QrcodeScannerType {
 export default function ScanQRPage() {
     const router = useRouter();
     const [scanResult, setScanResult] = useState<string | null>(null);
+    const [errorData, setErrorData] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [successData, setSuccessData] = useState<{
         amount: number;
@@ -77,8 +78,8 @@ export default function ScanQRPage() {
 
         // Delay initialization slightly to ensure DOM is ready
         const timer = setTimeout(() => {
-            // If we haven't successfully scanned yet, initialize
-            if (!successData && !isProcessing && isSecureContext) {
+            // If we haven't successfully scanned yet and no error, initialize
+            if (!successData && !errorData && !isProcessing && isSecureContext) {
                 initializeScanner();
             }
         }, 500);
@@ -94,7 +95,7 @@ export default function ScanQRPage() {
                 }
             }
         };
-    }, [successData, isSecureContext]); // Add isSecureContext to dependency array
+    }, [successData, errorData, isSecureContext]); // Add dependencies
 
     const onScanSuccess = async (decodedText: string, decodedResult: any) => {
         // Prevent multiple scans
@@ -137,7 +138,16 @@ export default function ScanQRPage() {
                 toast.error("Thất bại", {
                     description: response.message || "Không thể xác nhận tham gia"
                 });
-                setIsProcessing(false); // Allow scanning again
+
+                // NEW: Set error data to show Error UI and stop scanner
+                setErrorData(response.message || "Không thể xác nhận tham gia");
+
+                if (scanner) {
+                    try {
+                        await scanner.clear();
+                    } catch (e) { console.error(e); }
+                }
+                // setIsProcessing(false); // Do not reset processing, keep it stopped until user clicks "Try Again"
             }
         } catch (error: any) {
             console.error("Scan error:", error);
@@ -154,7 +164,15 @@ export default function ScanQRPage() {
                 description: errorMessage
             });
 
-            setIsProcessing(false); // Allow scanning again
+            // NEW: Set error data to show Error UI
+            setErrorData(errorMessage);
+
+            if (scanner) {
+                try {
+                    await scanner.clear();
+                } catch (e) { console.error(e); }
+            }
+
             setScanResult(null);
         }
     };
@@ -166,9 +184,10 @@ export default function ScanQRPage() {
 
     const handleReset = () => {
         setSuccessData(null);
+        setErrorData(null); // Clear error
         setScanResult(null);
         setIsProcessing(false);
-        // Scanner will re-initialize via useEffect
+        // Scanner will re-initialize via useEffect because successData and errorData are null
     };
 
     if (!isSecureContext) {
@@ -215,7 +234,7 @@ export default function ScanQRPage() {
             <div className="container max-w-md mx-auto py-6 px-4">
                 <h1 className="text-2xl font-bold mb-6 text-center">Quét mã QR</h1>
 
-                {!successData ? (
+                {!successData && !errorData ? (
                     <div className="space-y-6">
                         <Card className="overflow-hidden border-2 border-primary/20">
                             <CardContent className="p-0">
@@ -275,13 +294,13 @@ export default function ScanQRPage() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="text-center space-y-2 py-4 bg-white/50 rounded-xl">
-                                <h3 className="font-semibold text-lg">{successData.activityName}</h3>
+                                <h3 className="font-semibold text-lg">{successData?.activityName}</h3>
                                 <div className="flex items-center justify-center gap-2 text-2xl font-bold text-yellow-600">
-                                    <span>+{successData.amount} VKU</span>
+                                    <span>+{successData?.amount} VKU</span>
                                     <Zap className="fill-yellow-600 w-6 h-6" />
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    Số dư mới: {successData.newBalance} VKU
+                                    Số dư mới: {successData?.newBalance} VKU
                                 </p>
                             </div>
 
@@ -301,6 +320,37 @@ export default function ScanQRPage() {
                                     onClick={handleReset}
                                 >
                                     Quét mã khác
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Error State UI */}
+                {errorData && !successData && (
+                    <Card className="border-red-200 bg-red-50 shadow-lg animate-in fade-in zoom-in duration-300">
+                        <CardHeader className="text-center pb-2">
+                            <div className="mx-auto bg-red-100 p-3 rounded-full w-fit mb-2">
+                                <XCircle className="w-12 h-12 text-red-600" />
+                            </div>
+                            <CardTitle className="text-red-700 text-xl">Xác nhận thất bại</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="bg-white/50 p-4 rounded-xl text-center border border-red-100">
+                                <p className="text-red-800 font-medium">{errorData}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <Link href="/student/activities" className="w-full">
+                                    <Button variant="outline" className="w-full">
+                                        Về trang hoạt động
+                                    </Button>
+                                </Link>
+                                <Button
+                                    className="w-full bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={handleReset}
+                                >
+                                    Thử lại
                                 </Button>
                             </div>
                         </CardContent>
