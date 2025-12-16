@@ -46,7 +46,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: <Calendar className="w-5 h-5 mr-2" />,
     },
     {
-      href: "/student/scan",
+      href: "/student/activities",
+      label: "Hoạt động",
+      icon: <Calendar className="w-5 h-5 mr-2" />,
+    },
+    {
+      href: "/student/scan-qr",
       label: "Quét mã",
       icon: <QrCode className="w-5 h-5 mr-2" />,
     },

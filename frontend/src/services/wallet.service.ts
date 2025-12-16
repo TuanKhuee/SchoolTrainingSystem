@@ -36,4 +36,22 @@ export const walletService = {
       throw error;
     }
   },
+
+  async getStaffWallet(): Promise<WalletInfoResponse> {
+    try {
+      const response = await http.get<WalletInfoResponse>("/staff/wallet");
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async getStaffTransactions(): Promise<any[]> {
+    try {
+      const response = await http.get<any[]>("/staff/wallet/transactions");
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
 };

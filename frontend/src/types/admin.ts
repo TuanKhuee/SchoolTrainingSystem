@@ -25,6 +25,9 @@ export interface Activity {
   autoApprove?: boolean;
   organizer?: string;
   status?: string;
+  qrCodeToken?: string;
+  qrCodeUrl?: string;
+  qrCodeExpiration?: string;
 }
 
 export interface ActivityResponse {

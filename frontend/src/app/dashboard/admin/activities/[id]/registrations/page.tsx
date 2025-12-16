@@ -19,9 +19,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import QRCode from "react-qr-code";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, ArrowLeft, Loader2, Award } from "lucide-react";
+import { CheckCircle, XCircle, ArrowLeft, Loader2, Award, Download, Printer, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { AdminLayout } from "@/components/layouts/AdminLayout";
@@ -203,197 +205,269 @@ export default function ActivityRegistrationsPage() {
             <h1 className="text-2xl font-bold">Activity Registrations</h1>
           </div>
 
-          {activity && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>{activity.name}</CardTitle>
-                <CardDescription>
-                  Start: {new Date(activity.startDate).toLocaleDateString()} -
-                  End: {new Date(activity.endDate).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">
-                    Remaining slots: {remainingSlots} (of {activity.maxParticipants})
-                  </Badge>
-                  <Badge variant="outline">
-                    {activity.rewardCoin} coins reward
-                  </Badge>
-                  <Badge>
-                    {registrations.length} / {activity.maxParticipants}{" "}
-                    registered
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <Tabs defaultValue="registrations" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+              <TabsTrigger value="registrations">Registrations</TabsTrigger>
+              <TabsTrigger value="qrcode">QR Code</TabsTrigger>
+            </TabsList>
 
-          {registrations.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
-                No registrations found for this activity.
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Registered Students</CardTitle>
-                <CardDescription>
-                  {registrations.length} student(s) registered for this activity
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Student Code</TableHead>
-                      <TableHead>Full Name</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Registration Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Participation</TableHead>
-                      <TableHead>Evidence</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {registrations.map((registration) => (
-                      <TableRow key={registration.id}>
-                        <TableCell className="font-medium">
-                          {registration.student.studentCode}
-                        </TableCell>
-                        <TableCell>{registration.student.fullName}</TableCell>
-                        <TableCell>{registration.student.class}</TableCell>
-                        <TableCell>
-                          {format(new Date(registration.registeredAt), "PPp")}
-                        </TableCell>
-                        <TableCell>
-                          {registration.isApproved ? (
-                            <Badge
-                              variant="success"
-                              className="flex items-center gap-1"
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                              Approved
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="flex items-center gap-1"
-                            >
-                              Pending
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {registration.isParticipationConfirmed ? (
-                            <div>
-                              <Badge
-                                variant="success"
-                                className="flex items-center gap-1 mb-1"
-                              >
-                                <Award className="h-3 w-3" />
-                                Participated
-                              </Badge>
-                              <div className="text-xs text-muted-foreground">
-                                {format(
-                                  new Date(
-                                    registration.participationConfirmedAt!
-                                  ),
-                                  "PPp"
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="flex items-center gap-1"
-                            >
-                              Not Confirmed
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {registration.evidenceImageUrl ? (
-                            <Link
-                              href={registration.evidenceImageUrl}
-                              target="_blank"
-                              className="text-blue-500 hover:underline"
-                            >
-                              View evidence
-                            </Link>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              No evidence
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {!registration.isApproved && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handleApprove(registration)}
-                                disabled={approvingStudents.includes(
-                                  registration.student.studentCode
-                                )}
-                                className="flex items-center gap-1"
-                              >
-                                {approvingStudents.includes(
-                                  registration.student.studentCode
-                                ) ? (
-                                  <>
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                    Approving...
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="h-3 w-3" />
-                                    Approve
-                                  </>
-                                )}
-                              </Button>
-                            )}
+            <TabsContent value="registrations" className="mt-6 space-y-6">
+              {activity && (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle>{activity.name}</CardTitle>
+                    <CardDescription>
+                      Start: {new Date(activity.startDate).toLocaleDateString()} -
+                      End: {new Date(activity.endDate).toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline">
+                        Remaining slots: {remainingSlots} (of {activity.maxParticipants})
+                      </Badge>
+                      <Badge variant="outline">
+                        {activity.rewardCoin} coins reward
+                      </Badge>
+                      <Badge>
+                        {registrations.length} / {activity.maxParticipants}{" "}
+                        registered
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-                            {registration.isApproved &&
-                              !registration.isParticipationConfirmed && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleConfirmParticipation(registration)
-                                  }
-                                  disabled={confirmingStudents.includes(
-                                    registration.student.studentCode
-                                  )}
+              {registrations.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6 text-center text-muted-foreground">
+                    No registrations found for this activity.
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Registered Students</CardTitle>
+                    <CardDescription>
+                      {registrations.length} student(s) registered for this activity
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Student Code</TableHead>
+                          <TableHead>Full Name</TableHead>
+                          <TableHead>Class</TableHead>
+                          <TableHead>Registration Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Participation</TableHead>
+                          <TableHead>Evidence</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {registrations.map((registration) => (
+                          <TableRow key={registration.id}>
+                            <TableCell className="font-medium">
+                              {registration.student.studentCode}
+                            </TableCell>
+                            <TableCell>{registration.student.fullName}</TableCell>
+                            <TableCell>{registration.student.class}</TableCell>
+                            <TableCell>
+                              {format(new Date(registration.registeredAt), "PPp")}
+                            </TableCell>
+                            <TableCell>
+                              {registration.isApproved ? (
+                                <Badge
+                                  variant="success"
                                   className="flex items-center gap-1"
                                 >
-                                  {confirmingStudents.includes(
-                                    registration.student.studentCode
-                                  ) ? (
-                                    <>
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                      Confirming...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Award className="h-3 w-3" />
-                                      Confirm Participation
-                                    </>
-                                  )}
-                                </Button>
+                                  <CheckCircle className="h-3 w-3" />
+                                  Approved
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="flex items-center gap-1"
+                                >
+                                  Pending
+                                </Badge>
                               )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+                            </TableCell>
+                            <TableCell>
+                              {registration.isParticipationConfirmed ? (
+                                <div>
+                                  <Badge
+                                    variant="success"
+                                    className="flex items-center gap-1 mb-1"
+                                  >
+                                    <Award className="h-3 w-3" />
+                                    Participated
+                                  </Badge>
+                                  <div className="text-xs text-muted-foreground">
+                                    {format(
+                                      new Date(
+                                        registration.participationConfirmedAt!
+                                      ),
+                                      "PPp"
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="flex items-center gap-1"
+                                >
+                                  Not Confirmed
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {registration.evidenceImageUrl ? (
+                                <Link
+                                  href={registration.evidenceImageUrl}
+                                  target="_blank"
+                                  className="text-blue-500 hover:underline"
+                                >
+                                  View evidence
+                                </Link>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  No evidence
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                {!registration.isApproved && (
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => handleApprove(registration)}
+                                    disabled={approvingStudents.includes(
+                                      registration.student.studentCode
+                                    )}
+                                    className="flex items-center gap-1"
+                                  >
+                                    {approvingStudents.includes(
+                                      registration.student.studentCode
+                                    ) ? (
+                                      <>
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        Approving...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle className="h-3 w-3" />
+                                        Approve
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+
+                                {registration.isApproved &&
+                                  !registration.isParticipationConfirmed && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleConfirmParticipation(registration)
+                                      }
+                                      disabled={confirmingStudents.includes(
+                                        registration.student.studentCode
+                                      )}
+                                      className="flex items-center gap-1"
+                                    >
+                                      {confirmingStudents.includes(
+                                        registration.student.studentCode
+                                      ) ? (
+                                        <>
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                          Confirming...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Award className="h-3 w-3" />
+                                          Confirm Participation
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="qrcode" className="mt-6">
+              {activity && (
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                  <Card className="flex flex-col items-center justify-center p-6 bg-white">
+                    <div className="mb-4 text-center">
+                      <h2 className="text-xl font-bold mb-2">QR Code for {activity.name}</h2>
+                      <p className="text-sm text-muted-foreground">Scan to confirm participation</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border-4 border-black/10 shadow-sm">
+                      {/* 
+                          Using an iframe or img tag if the backend returns an image URL 
+                          OR rendering it client side if we have the token/data.
+                          Assuming activity.qrCodeUrl is the scanned content data.
+                        */}
+                      {/* We need to import QRCode from react-qr-code. I'll add the import later. */}
+                      {/* Placeholder for now, replaced in next step with proper import */}
+                      <div className="w-[300px] h-[300px] bg-gray-100 flex items-center justify-center">
+                        QR Code Component Here
+                      </div>
+                    </div>
+                    <div className="mt-6 text-center space-y-2">
+                      <p className="font-medium text-orange-600">Expires on: {activity.qrCodeExpiration ? format(new Date(activity.qrCodeExpiration), "PPp") : "Never"}</p>
+                      <div className="flex gap-2 justify-center mt-4">
+                        <Button variant="outline">Download</Button>
+                        <Button variant="outline">Print</Button>
+                        <Button>Refresh</Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Activity Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Activity Name</span>
+                        <span className="font-medium">{activity.name}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Reward Coin</span>
+                        <span className="font-bold text-yellow-600">{activity.rewardCoin} VKU</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Start Date</span>
+                        <span>{format(new Date(activity.startDate), "PPp")}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">End Date</span>
+                        <span>{format(new Date(activity.endDate), "PPp")}</span>
+                      </div>
+                      <div className="flex justify-between pt-2">
+                        <span className="text-muted-foreground">Confirmed Participants</span>
+                        <span className="font-bold text-green-600">
+                          {registrations.filter(r => r.isParticipationConfirmed).length} / {registrations.length}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       )}
     </AdminLayout>

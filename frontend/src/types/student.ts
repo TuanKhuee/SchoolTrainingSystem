@@ -34,6 +34,7 @@ export interface StudentActivity {
   status: string;
   registrations: any[] | null;
   isRegistered?: boolean;
+  isParticipationConfirmed?: boolean;
 }
 
 export type StudentActivitiesResponse = StudentActivity[];

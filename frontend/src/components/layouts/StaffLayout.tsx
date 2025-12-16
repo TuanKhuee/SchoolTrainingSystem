@@ -36,6 +36,11 @@ const StaffLayout = ({ children }: StaffLayoutProps) => {
             icon: <Tags className="w-5 h-5 mr-2" />,
         },
         {
+            href: "/staff/wallet",
+            label: "Thông tin ví",
+            icon: <ShoppingBag className="w-5 h-5 mr-2" />, // Temporary icon, better to use Wallet if available or reuse ShoppingBag/Package
+        },
+        {
             href: "/dashboard/change-password",
             label: "Đổi mật khẩu",
             icon: <Key className="w-5 h-5 mr-2" />,

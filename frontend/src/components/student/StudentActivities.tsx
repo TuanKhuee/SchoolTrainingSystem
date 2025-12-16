@@ -458,11 +458,10 @@ const ActivityCard = ({
           {/* Registration status message */}
           {registrationStatus.type !== "none" && (
             <div
-              className={`text-sm p-3 rounded ${
-                registrationStatus.type === "success"
+              className={`text-sm p-3 rounded ${registrationStatus.type === "success"
                   ? "bg-green-50 text-green-700 border border-green-200"
                   : "bg-red-50 text-red-700 border border-red-200"
-              }`}
+                }`}
             >
               {registrationStatus.message}
             </div>
@@ -470,22 +469,51 @@ const ActivityCard = ({
 
           {/* Registration action */}
           {activity.isRegistered ? (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-md text-sm flex items-center justify-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              You are registered for this activity
+            <div className="space-y-3">
+              <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-md text-sm flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                You are registered for this activity
+              </div>
+
+              {activity.isParticipationConfirmed ? (
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-md text-sm flex items-center justify-center font-medium">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  Participation Confirmed (+{activity.rewardCoin} VKU)
+                </div>
+              ) : (
+                <a
+                  href="/student/scan-qr"
+                  className="block w-full text-center px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Scan QR to Confirm Participation
+                </a>
+              )}
             </div>
           ) : (
             <button
@@ -494,11 +522,10 @@ const ActivityCard = ({
                 handleRegister();
               }}
               disabled={!canRegister || registerMutation.isPending}
-              className={`w-full px-4 py-2 rounded-md text-sm font-medium ${
-                canRegister && !registerMutation.isPending
+              className={`w-full px-4 py-2 rounded-md text-sm font-medium ${canRegister && !registerMutation.isPending
                   ? "bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+                }`}
             >
               {registerMutation.isPending ? (
                 <div className="flex items-center justify-center">
