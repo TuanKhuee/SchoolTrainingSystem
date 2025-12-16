@@ -56,6 +56,16 @@ export default function ActivityRegistrationsPage() {
       const activityData = await adminService.getActivity(id as string);
       setActivity(activityData);
 
+      // Fetch QR Code data separately to ensure we have the payload
+      try {
+        const qrData = await adminService.getActivityQRCode(id as string);
+        // Merge QR data with activity data
+        setActivity(prev => prev ? ({ ...prev, ...qrData }) : qrData);
+      } catch (qrErr) {
+        console.error("Error fetching QR code:", qrErr);
+        // Fallback to activity data only if QR fetch fails
+      }
+
       // Fetch registrations
       const registrationsData = await adminService.getActivityRegistrations(
         id as string
@@ -165,6 +175,90 @@ export default function ActivityRegistrationsPage() {
         prev.filter((code) => code !== registration.student.studentCode)
       );
     }
+  };
+
+  const handleRefreshQRCode = async () => {
+    if (!activity?.id) return;
+
+    try {
+      toast.loading("Refreshing QR Code...", { id: "refresh-qr" });
+      const data = await adminService.refreshActivityQRCode(activity.id);
+      setActivity(prev => prev ? ({ ...prev, ...data }) : data);
+      toast.success("QR Code refreshed successfully", { id: "refresh-qr" });
+    } catch (err) {
+      console.error("Error refreshing QR code:", err);
+      toast.error("Failed to refresh QR code", { id: "refresh-qr" });
+    }
+  };
+
+  const handleDownloadQRCode = () => {
+    const svg = document.getElementById("activity-qr-code");
+    if (!svg) {
+      toast.error("QR Code element not found");
+      return;
+    }
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    // Set canvas dimensions based on SVG viewbox or attributes
+    const svgSize = 300; // Assuming 256 + padding
+    canvas.width = svgSize;
+    canvas.height = svgSize;
+
+    img.onload = () => {
+      if (!ctx) return;
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `QR_Activity_${activity?.id || 'code'}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+      toast.success("QR Code downloaded");
+    };
+
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+  };
+
+  const handlePrintQRCode = () => {
+    const printWindow = window.open('', '', 'width=600,height=600');
+    if (!printWindow) return;
+
+    const qrCodeSvg = document.getElementById("activity-qr-code")?.outerHTML;
+    const activityName = activity?.name || 'Activity';
+    const expiration = activity?.qrCodeExpiration ? new Date(activity.qrCodeExpiration).toLocaleString() : 'Never';
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print QR Code - ${activityName}</title>
+                <style>
+                    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                    .container { text-align: center; border: 2px solid #000; padding: 40px; border-radius: 10px; }
+                    h1 { margin-bottom: 20px; font-size: 24px; }
+                    p { margin-top: 20px; color: #555; }
+                    .qr-container { padding: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>${activityName}</h1>
+                    <div class="qr-container">
+                        ${qrCodeSvg}
+                    </div>
+                    <p>Expires: ${expiration}</p>
+                </div>
+                <script>
+                    window.onload = function() { window.print(); window.close(); }
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
   };
 
   // Calculate approved registrations and remaining slots
@@ -414,23 +508,40 @@ export default function ActivityRegistrationsPage() {
                       <p className="text-sm text-muted-foreground">Scan to confirm participation</p>
                     </div>
                     <div className="bg-white p-4 rounded-xl border-4 border-black/10 shadow-sm">
-                      {/* 
-                          Using an iframe or img tag if the backend returns an image URL 
-                          OR rendering it client side if we have the token/data.
-                          Assuming activity.qrCodeUrl is the scanned content data.
-                        */}
-                      {/* We need to import QRCode from react-qr-code. I'll add the import later. */}
-                      {/* Placeholder for now, replaced in next step with proper import */}
-                      <div className="w-[300px] h-[300px] bg-gray-100 flex items-center justify-center">
-                        QR Code Component Here
-                      </div>
+                      {activity.qrCodePayload ? (
+                        <div className="w-auto h-auto bg-white p-2">
+                          <QRCode
+                            id="activity-qr-code"
+                            value={activity.qrCodePayload}
+                            size={256}
+                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                            viewBox={`0 0 256 256`}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-[256px] h-[256px] bg-gray-100 flex items-center justify-center text-muted-foreground">
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-6 h-6 animate-spin" />
+                            Loading QR...
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="mt-6 text-center space-y-2">
                       <p className="font-medium text-orange-600">Expires on: {activity.qrCodeExpiration ? format(new Date(activity.qrCodeExpiration), "PPp") : "Never"}</p>
                       <div className="flex gap-2 justify-center mt-4">
-                        <Button variant="outline">Download</Button>
-                        <Button variant="outline">Print</Button>
-                        <Button>Refresh</Button>
+                        <Button variant="outline" onClick={handleDownloadQRCode}>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
+                        <Button variant="outline" onClick={handlePrintQRCode}>
+                          <Printer className="w-4 h-4 mr-2" />
+                          Print
+                        </Button>
+                        <Button onClick={handleRefreshQRCode}>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Refresh
+                        </Button>
                       </div>
                     </div>
                   </Card>

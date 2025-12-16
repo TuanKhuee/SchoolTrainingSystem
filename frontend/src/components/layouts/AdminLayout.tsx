@@ -1,5 +1,4 @@
-"use client";
-
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,6 +11,8 @@ import {
   ListTodo,
   CreditCard,
   Key,
+  Menu,
+  X,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -22,6 +23,9 @@ interface AdminLayoutProps {
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const router = useRouter();
   const { logout } = useAuthStore();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   const handleLogout = async () => {
     await logout();
@@ -59,6 +63,9 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
       label: "Thêm hoạt động",
       icon: <Calendar className="w-5 h-5 mr-2" />,
     },
+    // {
+    //   href: "/dashboard/admin/wallet", // Assuming functionality
+    //   label: "Ví Admin",
     //   icon: <CreditCard className="w-5 h-5 mr-2" />,
     // },
     {
@@ -70,8 +77,40 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-indigo-600 to-purple-700 z-40 flex items-center justify-between px-4 shadow-md">
+        <div className="flex items-center gap-2">
+          <Image
+            src="/logo_educhain.png"
+            alt="EduChain Logo"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
+          <span className="text-lg font-bold text-white">EduChain Admin</span>
+        </div>
+        <button
+          onClick={toggleMobileMenu}
+          className="p-2 text-white hover:bg-white/10 rounded-lg"
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 bg-gradient-to-b from-indigo-600 to-purple-700 shadow-2xl">
+      <div className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-indigo-600 to-purple-700 shadow-2xl 
+        transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
         <div className="p-6 border-b border-white/20">
           <div className="flex items-center gap-3 mb-2">
             <Image
@@ -95,6 +134,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center p-3 text-white/90 rounded-xl hover:bg-white/20 hover:text-white transition-all duration-200 group"
                 >
                   <span className="group-hover:scale-110 transition-transform">
@@ -118,8 +158,8 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        <main className="p-6">{children}</main>
+      <div className="flex-1 overflow-auto md:ml-0 pt-16 md:pt-0">
+        <main className="p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

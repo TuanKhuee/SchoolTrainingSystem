@@ -227,4 +227,14 @@ export const adminService = {
   async getTransactionById(id: number): Promise<TransactionDetailsResponse> {
     return http.get(`/admin/transactions/${id}`);
   },
+
+  // Get QR code for an activity
+  async getActivityQRCode(id: number | string): Promise<any> {
+    return http.get(`/admin/Activities/${id}/qrcode`);
+  },
+
+  // Refresh QR code for an activity
+  async refreshActivityQRCode(id: number | string): Promise<any> {
+    return http.post(`/admin/Activities/${id}/qrcode/refresh`);
+  },
 };

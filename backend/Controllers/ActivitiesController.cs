@@ -478,13 +478,54 @@ namespace backend.Controllers
                 }
             }
 
+            var payload = $"{activity.Id}|{activity.QrCodeToken}|{((DateTimeOffset)activity.QrCodeExpiration).ToUnixTimeSeconds()}";
+
             return Ok(new
             {
                 activity.Id,
                 activity.Name,
                 activity.QrCodeUrl,
-                activity.QrCodeExpiration
+                activity.QrCodeExpiration,
+                activity.QrCodeToken,
+                QrCodePayload = payload
             });
+        }
+
+        // POST: api/admin/activities/5/qrcode/refresh
+        [HttpPost("{id}/qrcode/refresh")]
+        public async Task<IActionResult> RefreshActivityQRCode(int id)
+        {
+            var activity = await _context.Activities.FindAsync(id);
+            if (activity == null) return NotFound();
+
+            try
+            {
+                var (token, qrCodeUrl, expiration) = _qrCodeService.GenerateQRCodeForActivity(activity.Id, activity.EndDate);
+
+                // Update the activity with QR code information
+                activity.QrCodeToken = token;
+                activity.QrCodeUrl = qrCodeUrl;
+                activity.QrCodeExpiration = expiration;
+
+                await _context.SaveChangesAsync();
+
+                var payload = $"{activity.Id}|{activity.QrCodeToken}|{((DateTimeOffset)activity.QrCodeExpiration).ToUnixTimeSeconds()}";
+
+                return Ok(new
+                {
+                    activity.Id,
+                    activity.Name,
+                    activity.QrCodeUrl,
+                    activity.QrCodeExpiration,
+                    activity.QrCodeToken,
+                    QrCodePayload = payload
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to refresh QR code for activity {activity.Id}");
+                return StatusCode(500, new { Message = "Failed to refresh QR code" });
+            }
         }
     }
 }

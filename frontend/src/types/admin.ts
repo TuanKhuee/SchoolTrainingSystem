@@ -26,8 +26,9 @@ export interface Activity {
   organizer?: string;
   status?: string;
   qrCodeToken?: string;
-  qrCodeUrl?: string;
+  qrCodeUrl?: string; // Kept for backward compatibility or if we want to show image
   qrCodeExpiration?: string;
+  qrCodePayload?: string; // The raw string data for generic QR generation
 }
 
 export interface ActivityResponse {
