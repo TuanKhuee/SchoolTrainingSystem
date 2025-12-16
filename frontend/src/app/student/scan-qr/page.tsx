@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { activityService } from "@/services/activity.service";
@@ -24,7 +24,8 @@ export default function ScanQRPage() {
     const router = useRouter();
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [errorData, setErrorData] = useState<string | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
+    // Use ref for immediate state access in callbacks
+    const isProcessingRef = useRef(false);
     const [successData, setSuccessData] = useState<{
         amount: number;
         activityName: string;
@@ -79,7 +80,7 @@ export default function ScanQRPage() {
         // Delay initialization slightly to ensure DOM is ready
         const timer = setTimeout(() => {
             // If we haven't successfully scanned yet and no error, initialize
-            if (!successData && !errorData && !isProcessing && isSecureContext) {
+            if (!successData && !errorData && !isProcessingRef.current && isSecureContext) {
                 initializeScanner();
             }
         }, 500);
@@ -99,10 +100,10 @@ export default function ScanQRPage() {
 
     const onScanSuccess = async (decodedText: string, decodedResult: any) => {
         // Prevent multiple scans
-        if (isProcessing || scanResult === decodedText) return;
+        if (isProcessingRef.current || scanResult === decodedText) return;
 
         setScanResult(decodedText);
-        setIsProcessing(true); // Stop processing new scans immediately
+        isProcessingRef.current = true; // Stop processing new scans immediately
 
         // Stop the scanner UI temporarily
         const scannerElement = document.getElementById("reader");
@@ -186,7 +187,7 @@ export default function ScanQRPage() {
         setSuccessData(null);
         setErrorData(null); // Clear error
         setScanResult(null);
-        setIsProcessing(false);
+        isProcessingRef.current = false;
         // Scanner will re-initialize via useEffect because successData and errorData are null
     };
 

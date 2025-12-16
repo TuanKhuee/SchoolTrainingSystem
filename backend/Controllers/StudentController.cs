@@ -481,8 +481,10 @@ namespace backend.Controllers
 
                 return Ok(new
                 {
+                    Success = true,
                     Message = "Participation confirmed successfully",
-                    RewardCoins = activity.RewardCoin,
+                    Amount = activity.RewardCoin,
+                    ActivityName = activity.Name,
                     TransactionHash = result?.TransactionHash,
                     NewBalance = result?.NewBalance
                 });
@@ -579,31 +581,32 @@ namespace backend.Controllers
 
         // Lịch sử đơn hàng theo Student
         [HttpGet("history/{studentId}")]
-    public async Task<IActionResult> GetOrderHistory(string studentId)
-    {
-        var orders = await _context.Orders
-            .Where(o => o.StudentId == studentId)
-            .OrderByDescending(o => o.CreatedAt)
-            .Select(o => new
-            {
-                o.OrderId,
-                o.TotalAmount,
-                o.TransactionHash,
-                o.CreatedAt,
-                Items = o.Items.Select(i => new {
-                    i.ProductId,
-                    i.Quantity,
-                    i.UnitPrice,
-                    ProductName = i.Product.Name
+        public async Task<IActionResult> GetOrderHistory(string studentId)
+        {
+            var orders = await _context.Orders
+                .Where(o => o.StudentId == studentId)
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => new
+                {
+                    o.OrderId,
+                    o.TotalAmount,
+                    o.TransactionHash,
+                    o.CreatedAt,
+                    Items = o.Items.Select(i => new
+                    {
+                        i.ProductId,
+                        i.Quantity,
+                        i.UnitPrice,
+                        ProductName = i.Product.Name
+                    })
                 })
-            })
-            .ToListAsync();
+                .ToListAsync();
 
-        if (!orders.Any())
-            return NotFound(new { message = "No orders found" });
+            if (!orders.Any())
+                return NotFound(new { message = "No orders found" });
 
-        return Ok(orders);
-    }
+            return Ok(orders);
+        }
 
 
 
