@@ -234,7 +234,8 @@ export default function ScanQRPage() {
             <div className="container max-w-md mx-auto py-6 px-4">
                 <h1 className="text-2xl font-bold mb-6 text-center">Quét mã QR</h1>
 
-                {!successData && !errorData ? (
+                {/* Scanner UI - Show only when no success and no error */}
+                {!successData && !errorData && (
                     <div className="space-y-6">
                         <Card className="overflow-hidden border-2 border-primary/20">
                             <CardContent className="p-0">
@@ -281,7 +282,10 @@ export default function ScanQRPage() {
                             </div>
                         </div>
                     </div>
-                ) : (
+                )}
+
+                {/* Success State UI */}
+                {successData && (
                     <Card className="border-green-200 bg-green-50 shadow-lg animate-in fade-in zoom-in duration-300">
                         <CardHeader className="text-center pb-2">
                             <div className="mx-auto bg-green-100 p-3 rounded-full w-fit mb-2">
@@ -294,13 +298,13 @@ export default function ScanQRPage() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="text-center space-y-2 py-4 bg-white/50 rounded-xl">
-                                <h3 className="font-semibold text-lg">{successData?.activityName}</h3>
+                                <h3 className="font-semibold text-lg">{successData.activityName}</h3>
                                 <div className="flex items-center justify-center gap-2 text-2xl font-bold text-yellow-600">
-                                    <span>+{successData?.amount} VKU</span>
+                                    <span>+{successData.amount} VKU</span>
                                     <Zap className="fill-yellow-600 w-6 h-6" />
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    Số dư mới: {successData?.newBalance} VKU
+                                    Số dư mới: {successData.newBalance} VKU
                                 </p>
                             </div>
 
