@@ -31,11 +31,20 @@ export default function ScanQRPage() {
     } | null>(null);
     const [scanner, setScanner] = useState<any>(null);
 
+    const [isSecureContext, setIsSecureContext] = useState(true);
+
     useEffect(() => {
+        // Check for secure context
+        if (typeof window !== 'undefined' && window.isSecureContext === false) {
+            setIsSecureContext(false);
+            return;
+        }
+
         // Only initialize scanner on client side
         let html5QrcodeScanner: any;
 
         const initializeScanner = () => {
+            // ... existing initialization logic ...
             // Configuration for the scanner
             const config = {
                 fps: 10,
@@ -69,7 +78,7 @@ export default function ScanQRPage() {
         // Delay initialization slightly to ensure DOM is ready
         const timer = setTimeout(() => {
             // If we haven't successfully scanned yet, initialize
-            if (!successData && !isProcessing) {
+            if (!successData && !isProcessing && isSecureContext) {
                 initializeScanner();
             }
         }, 500);
@@ -85,7 +94,7 @@ export default function ScanQRPage() {
                 }
             }
         };
-    }, [successData]); // Re-initialize if we reset success data (user wants to scan again)
+    }, [successData, isSecureContext]); // Add isSecureContext to dependency array
 
     const onScanSuccess = async (decodedText: string, decodedResult: any) => {
         // Prevent multiple scans
@@ -162,8 +171,47 @@ export default function ScanQRPage() {
         // Scanner will re-initialize via useEffect
     };
 
+    if (!isSecureContext) {
+        return (
+            <DashboardLayout>
+                <div className="container max-w-md mx-auto py-6 px-4">
+                    <h1 className="text-2xl font-bold mb-6 text-center">Lỗi bảo mật</h1>
+                    <Card className="border-red-200 bg-red-50">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-red-700">
+                                <XCircle className="w-6 h-6" />
+                                Không thể truy cập Camera
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-red-600">
+                                Trình duyệt chặn truy cập camera vì kết nối không an toàn (không phải HTTPS hoặc localhost).
+                            </p>
+                            <div className="bg-white p-4 rounded-lg border border-red-100 text-sm space-y-2">
+                                <p className="font-semibold">Cách khắc phục:</p>
+                                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                    <li>Sử dụng <strong>localhost</strong> nếu đang chạy trên máy tính.</li>
+                                    <li>Cấu hình <strong>HTTPS</strong> cho server nếu truy cập từ thiết bị khác.</li>
+                                    <li>Sử dụng các công cụ như <strong>ngrok</strong> để tạo tunnel HTTPS.</li>
+                                </ul>
+                            </div>
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => router.push('/student/activities')}
+                            >
+                                Quay lại trang hoạt động
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
     return (
         <DashboardLayout>
+            {/* ... existing return ... */}
             <div className="container max-w-md mx-auto py-6 px-4">
                 <h1 className="text-2xl font-bold mb-6 text-center">Quét mã QR</h1>
 

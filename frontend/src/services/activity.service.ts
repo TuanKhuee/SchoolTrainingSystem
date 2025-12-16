@@ -9,10 +9,11 @@ export interface ScanQRResponse {
 }
 
 export const activityService = {
-    scanQRCode: async (qrCodeToken: string): Promise<ScanQRResponse> => {
+    scanQRCode: async (qrCodePayload: string): Promise<ScanQRResponse> => {
         try {
-            const response = await http.post<ScanQRResponse>("/activities/scan-qr", {
-                qrCodeToken,
+            // Note: Endpoint is in StudentController: api/student/Student/scan-qr-code
+            const response = await http.post<ScanQRResponse>("/student/Student/scan-qr-code", {
+                qrCodePayload,
             });
             return response;
         } catch (error) {
