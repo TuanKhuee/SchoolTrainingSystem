@@ -34,8 +34,24 @@ const config: HardhatUserConfig = {
     artifacts: "./artifacts",
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      sepolia: process.env.ETHERSCAN_API_KEY || "",
+    },
+    customChains: [
+      {
+        network: "sepolia",
+        chainId: 11155111,
+        urls: {
+          apiURL: "https://api-sepolia.etherscan.io/api",
+          browserURL: "https://sepolia.etherscan.io"
+        }
+      }
+    ]
+  },
+  sourcify: {
+    enabled: false,
   },
 };
 
 export default config;
+

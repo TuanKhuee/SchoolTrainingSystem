@@ -83,8 +83,19 @@ namespace Services
                 // compute wei amount for token
                 var weiAmount = UnitConversion.Convert.ToWei(totalAmount, decimals);
 
+                // 3.0 Check student VKU token balance first
+                var studentBalance = await GetTokenBalanceAsync(studentAddress);
+                _logger.LogInformation($"Student balance: {studentBalance}, Required: {weiAmount}, Total amount: {totalAmount} VKU");
+
+                if (studentBalance < weiAmount)
+                {
+                    var balanceInTokens = UnitConversion.Convert.FromWei(studentBalance, decimals);
+                    return new CheckoutResult(false, $"Insufficient VKU balance. You have {balanceInTokens} VKU but need {totalAmount} VKU");
+                }
+
                 // 3.1 check allowance
                 var allowance = await GetAllowanceAsync(studentAddress, centralAccount.Address);
+                _logger.LogInformation($"Current allowance: {allowance}, Required: {weiAmount}");
 
                 if (allowance < weiAmount)
                 {
@@ -93,6 +104,7 @@ namespace Services
                     var needsEth = await StudentNeedsEthForApprove(studentAddress);
                     if (needsEth)
                     {
+                        _logger.LogInformation($"Topping up ETH to student {studentAddress}");
                         var topUpReceipt = await TopUpEthToStudentAsync(centralWeb3, centralAccount.Address, studentAddress, 0.002m); // 0.002 ETH
                         if (topUpReceipt == null)
                         {
@@ -104,6 +116,7 @@ namespace Services
                     if (string.IsNullOrEmpty(student.Wallet.PrivateKey))
                         return new CheckoutResult(false, "Student private key missing for auto-approve");
 
+                    _logger.LogInformation($"Calling approve for {weiAmount} tokens");
                     var approveResult = await ApproveFromStudentAsync(student.Wallet.PrivateKey, centralAccount.Address, weiAmount);
                     if (!approveResult.Success)
                         return new CheckoutResult(false, $"Approve failed: {approveResult.Message}");
@@ -115,9 +128,13 @@ namespace Services
                 }
 
                 // 3.2 central calls transferFrom(student, staff, amount)
+                _logger.LogInformation($"Calling transferFrom: from={studentAddress}, to={staff.Wallet.Address}, amount={weiAmount}");
                 var transferResult = await TransferFromByCentralAsync(centralWeb3, centralAccount, studentAddress, staff.Wallet.Address, weiAmount);
                 if (!transferResult.Success)
+                {
+                    _logger.LogError($"TransferFrom failed: {transferResult.Message}");
                     return new CheckoutResult(false, $"Transfer failed: {transferResult.Message}");
+                }
 
                 // 4. Create order and update DB
                 var order = new Order
@@ -186,6 +203,24 @@ namespace Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GetAllowanceAsync failed");
+                return BigInteger.Zero;
+            }
+        }
+
+        // Get VKU token balance of an address
+        private async Task<BigInteger> GetTokenBalanceAsync(string address)
+        {
+            try
+            {
+                var web3 = new Web3(_nodeUrl);
+                var contract = web3.Eth.GetContract(_vkuCoinAbi, _vkuCoinAddress);
+                var balanceFunction = contract.GetFunction("balanceOf");
+                var balance = await balanceFunction.CallAsync<BigInteger>(address);
+                return balance;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetTokenBalanceAsync failed");
                 return BigInteger.Zero;
             }
         }
