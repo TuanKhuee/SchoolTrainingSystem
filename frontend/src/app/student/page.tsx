@@ -9,6 +9,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth.store";
 import { http } from "@/lib/http-client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { studentService } from "@/services/student.service";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 interface Lesson {
   courseCode: string;
@@ -16,7 +27,15 @@ interface Lesson {
   room: string;
   startPeriod: number;
   endPeriod: number;
+
   teacherName: string;
+  courseOfferingId: string;
+}
+
+interface AttendanceRecord {
+  id: string;
+  date: string;
+  isPresent: boolean;
 }
 
 interface DaySchedule {
@@ -47,6 +66,12 @@ export default function StudentDashboard() {
   const [loadingTimetable, setLoadingTimetable] = useState(false);
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState<string>("");
+
+  // Attendance Modal State
+  const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   const handleRefreshBalance = async () => {
     if (isRefreshing) return;
@@ -99,6 +124,21 @@ export default function StudentDashboard() {
       setTimetable([]);
     } finally {
       setLoadingTimetable(false);
+    }
+  };
+
+  const handleLessonClick = async (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+    setIsAttendanceOpen(true);
+    setLoadingAttendance(true);
+    try {
+      const history = await studentService.getAttendanceHistory(lesson.courseOfferingId);
+      setAttendanceHistory(history);
+    } catch (error) {
+      console.error("Failed to fetch attendance:", error);
+      setAttendanceHistory([]);
+    } finally {
+      setLoadingAttendance(false);
     }
   };
 
@@ -225,10 +265,11 @@ export default function StudentDashboard() {
                           <td
                             key={day}
                             rowSpan={shouldRender ? rowSpan : 1}
-                            className={`border border-gray-300 dark:border-gray-600 p-2 text-xs ${shouldRender
+                            className={`border border-gray-300 dark:border-gray-600 p-2 text-xs cursor-pointer hover:opacity-90 transition-opacity ${shouldRender
                               ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
                               : "bg-white dark:bg-gray-800"
                               }`}
+                            onClick={() => shouldRender && lesson && handleLessonClick(lesson)}
                           >
                             {shouldRender && lesson && (
                               <div className="flex flex-col gap-1">
@@ -257,6 +298,56 @@ export default function StudentDashboard() {
           )}
         </div>
       </div>
+
+      <Dialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Điểm danh: {selectedLesson?.courseName}</DialogTitle>
+            <DialogDescription>
+              Lịch sử điểm danh môn học
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center text-sm">
+              <span>Tổng số buổi: <strong>{attendanceHistory.length}</strong></span>
+              <span>Vắng: <strong className="text-red-500">{attendanceHistory.filter(a => !a.isPresent).length}</strong></span>
+            </div>
+
+            {loadingAttendance ? (
+              <div className="text-center py-4">Đang tải...</div>
+            ) : attendanceHistory.length === 0 ? (
+              <p className="text-center text-muted-foreground">Chưa có dữ liệu điểm danh</p>
+            ) : (
+              <div className="border rounded-md max-h-[300px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted sticky top-0">
+                    <tr>
+                      <th className="p-2 text-left">Ngày</th>
+                      <th className="p-2 text-center">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceHistory.map((record) => (
+                      <tr key={record.id} className="border-t">
+                        <td className="p-2">
+                          {format(new Date(record.date), "dd/MM/yyyy", { locale: vi })}
+                        </td>
+                        <td className="p-2 text-center">
+                          {record.isPresent ? (
+                            <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">Có mặt</Badge>
+                          ) : (
+                            <Badge variant="destructive">Vắng</Badge>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

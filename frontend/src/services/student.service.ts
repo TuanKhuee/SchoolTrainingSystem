@@ -72,11 +72,29 @@ export const studentService = {
       if (!activityId) {
         throw new Error("Activity ID is required");
       }
-      
+
       const response = await http.get<any[]>(`/student/Student/${activityId}/registrations`);
       return response;
     } catch (error) {
       console.error("Error fetching activity registrations:", error);
+      throw error;
+    }
+  },
+
+  async getGrades(): Promise<any[]> {
+    try {
+      return await http.get<any[]>("/student/course/grades");
+    } catch (error) {
+      console.error("Error fetching grades:", error);
+      throw error;
+    }
+  },
+
+  async getAttendanceHistory(offeringId: string): Promise<any[]> {
+    try {
+      return await http.get<any[]>(`/student/course/attendance/${offeringId}`);
+    } catch (error) {
+      console.error("Error fetching attendance history:", error);
       throw error;
     }
   },

@@ -275,7 +275,8 @@ namespace backend.Controllers.SystemTrainingController.CourseController
                     Room = r.CourseOffering.Room,
                     CourseName = r.CourseOffering.Course.CourseName,
                     CourseCode = r.CourseOffering.Course.CourseCode,
-                    TeacherName = r.CourseOffering.Teacher.FullName
+                    TeacherName = r.CourseOffering.Teacher.FullName,
+                    CourseOfferingId = r.CourseOfferingId
                 })
                 .ToListAsync();
 
@@ -291,6 +292,7 @@ namespace backend.Controllers.SystemTrainingController.CourseController
                     Day = ConvertDayOfWeekToVietnamese(g.Key),
                     Lessons = g.OrderBy(x => x.StartPeriod).Select(x => new
                     {
+                        x.CourseOfferingId,
                         x.CourseCode,
                         x.CourseName,
                         x.Room,
@@ -331,6 +333,66 @@ namespace backend.Controllers.SystemTrainingController.CourseController
                 "sunday" => "Chủ Nhật",
                 _ => day
             };
+        }
+
+        // 🔹 Xem kết quả học tập
+        [HttpGet("grades")]
+        public async Task<IActionResult> GetMyGrades()
+        {
+            var studentId = User.FindFirstValue("UserId");
+            if (string.IsNullOrEmpty(studentId))
+                return Unauthorized(new { message = "Không xác định được sinh viên." });
+
+            var grades = await _context.CourseRegistrations
+                .Where(r => r.StudentId == studentId)
+                .Include(r => r.CourseOffering)
+                    .ThenInclude(o => o.Course)
+                .Include(r => r.CourseOffering)
+                    .ThenInclude(o => o.Semester)
+                .Include(r => r.Score)
+                .Select(r => new
+                {
+                    CourseName = r.CourseOffering.Course.CourseName,
+                    CourseCode = r.CourseOffering.Course.CourseCode,
+                    Credits = r.CourseOffering.Course.Credits,
+                    Semester = r.CourseOffering.Semester.Name,
+                    SchoolYear = r.CourseOffering.Semester.SchoolYear,
+                    ProcessScore = r.Score != null ? r.Score.Process : null,
+                    MidtermScore = r.Score != null ? r.Score.Midterm : null,
+                    FinalScore = r.Score != null ? r.Score.Final : null,
+                    TotalScore = r.Score != null ? r.Score.Total : null,
+                })
+                .ToListAsync();
+
+            return Ok(grades);
+        }
+
+        // 🔹 Xem lịch sử điểm danh
+        [HttpGet("attendance/{offeringId}")]
+        public async Task<IActionResult> GetAttendanceHistory(Guid offeringId)
+        {
+            var studentId = User.FindFirstValue("UserId");
+            if (string.IsNullOrEmpty(studentId))
+                return Unauthorized(new { message = "Không xác định được sinh viên." });
+
+            var registration = await _context.CourseRegistrations
+                .Include(r => r.Attendances)
+                .FirstOrDefaultAsync(r => r.StudentId == studentId && r.CourseOfferingId == offeringId);
+
+            if (registration == null)
+                return NotFound(new { message = "Bạn chưa đăng ký lớp học phần này." });
+
+            var history = registration.Attendances
+                .OrderByDescending(a => a.Date)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.Date,
+                    a.IsPresent
+                })
+                .ToList();
+
+            return Ok(history);
         }
     }
 }

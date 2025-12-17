@@ -37,6 +37,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: <BookOpen className="w-5 h-5 mr-2" />,
     },
     {
+      href: "/student/results",
+      label: "Kết quả học tập",
+      icon: <Award className="w-5 h-5 mr-2" />,
+    },
+    {
       href: "/student/shop",
       label: "Mua hàng",
       icon: <ShoppingCart className="w-5 h-5 mr-2" />,
