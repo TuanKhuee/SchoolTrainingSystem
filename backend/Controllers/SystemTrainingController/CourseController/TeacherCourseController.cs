@@ -48,6 +48,7 @@ namespace backend.Controllers.SystemTrainingController.CourseController
                     CourseName = o.Course != null ? o.Course.CourseName : "",
                     Credits = o.Course != null ? o.Course.Credits : 0,
                     SemesterName = o.Semester != null ? o.Semester.Name : "",
+                    SemesterId = o.SemesterId,
                     SchoolYear = o.Semester != null ? o.Semester.SchoolYear : "",
                     DayOfWeek = o.DayOfWeek,
                     StartPeriod = o.StartPeriod,

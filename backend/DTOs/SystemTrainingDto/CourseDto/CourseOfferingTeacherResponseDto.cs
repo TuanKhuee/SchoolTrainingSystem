@@ -13,6 +13,7 @@ namespace backend.DTOs.SystemTrainingDto.CourseDto
         public string CourseName { get; set; }
         public int Credits { get; set; }
         public string SemesterName { get; set; }
+        public Guid SemesterId { get; set; }
         public string SchoolYear { get; set; }
         public string DayOfWeek { get; set; }
         public int? StartPeriod { get; set; }
