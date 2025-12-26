@@ -39,7 +39,7 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=SchoolDB;User Id=sa;Password=EduChain@2024!;TrustServerCertificate=True;
       - ASPNETCORE_ENVIRONMENT=Production
-      - Blockchain__RpcUrl=http://blockchain:8545
+      - Blockchain__RpcUrl=https://eth-sepolia.g.alchemy.com/v2/gVw64Zn1HDHcCmzY0Z1V-
     depends_on:
       - sqlserver
       - blockchain
