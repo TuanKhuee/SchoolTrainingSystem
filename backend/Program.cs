@@ -299,7 +299,21 @@ using (var scope = app.Services.CreateScope())
                 }
                 else
                 {
-                    logger.LogInformation("Admin wallet already exists");
+                    logger.LogInformation("Admin wallet exists. Forcing update to Sepolia credentials...");
+
+                    var address = "0x991aF24333E512156b439617Fe9BC23464119209"; // Sepolia Admin Address
+                    var privateKey = "0x62e67f10725e2688993d763d79348f9f5a50e4f9085cbc58432a7bf90584aca2"; // Sepolia Admin Private Key
+                    var privateKeyWithoutPrefix = privateKey.StartsWith("0x") ? privateKey.Substring(2) : privateKey;
+
+                    adminWallet.Address = address;
+                    adminWallet.PrivateKey = privateKeyWithoutPrefix;
+
+                    dbContext.Wallets.Update(adminWallet);
+                    await dbContext.SaveChangesAsync();
+
+                    // Sync balance immediately
+                    await walletService.SyncWalletBalance(address);
+                    logger.LogInformation("Admin wallet updated to Sepolia credentials and balance synced.");
                 }
             }
             else
