@@ -278,11 +278,11 @@ using (var scope = app.Services.CreateScope())
 
                 if (adminWallet == null)
                 {
-                    var address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+                    var address = "0x991aF24333E512156b439617Fe9BC23464119209"; // Sepolia Admin Address
 
                     var initialBalance = await walletService.SyncWalletBalance(address);
 
-                    var privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+                    var privateKey = "0x62e67f10725e2688993d763d79348f9f5a50e4f9085cbc58432a7bf90584aca2"; // Sepolia Admin Private Key
                     var privateKeyWithoutPrefix = privateKey.StartsWith("0x") ? privateKey.Substring(2) : privateKey;
 
                     adminWallet = new Wallet
