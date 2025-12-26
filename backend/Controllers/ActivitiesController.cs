@@ -287,6 +287,9 @@ namespace backend.Controllers
             if (adminWallet == null)
                 return StatusCode(500, new { Message = "Admin chưa có ví" });
 
+            // Sync admin wallet balance from blockchain to ensure we have the latest data
+            await _walletService.SyncWalletBalance(adminWallet.Address);
+
             // Check if admin has enough balance
             if (adminWallet.Balance < activity.RewardCoin)
             {
