@@ -1,0 +1,64 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'backend.Tests/**'
+      - '.github/workflows/backend-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'backend.Tests/**'
+      - '.github/workflows/backend-tests.yml'
+
+jobs:
+  test:
+    name: Run Backend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore SchoolTrainingSystem.sln
+      
+    - name: Build solution
+      run: dotnet build SchoolTrainingSystem.sln --configuration Release --no-restore
+      
+    - name: Run tests
+      run: dotnet test SchoolTrainingSystem.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/
+      
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: |
+          **/test-results.trx
+        
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      if: always()
+      with:
+        files: ./backend.Tests/coverage/coverage.opencover.xml
+        flags: backend
+        name: backend-coverage
+        fail_ci_if_error: false
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        
+    - name: Comment coverage on PR
+      uses: romeovs/lcov-reporter-action@v0.3.1
+      if: github.event_name == 'pull_request'
+      with:
+        lcov-file: ./backend.Tests/coverage/coverage.opencover.xml
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        delete-old-comments: true
