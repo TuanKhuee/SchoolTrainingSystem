@@ -10,10 +10,12 @@ namespace backend.Models
         public int Id { get; set; }
         public string UserId { get; set; }
         public User User { get; set; }
+        public string? RecipientId { get; set; }
+        public User? Recipient { get; set; }
         public decimal Amount { get; set; }
         public string TransactionType { get; set; } // "ActivityReward", "Transfer", etc.
         public string Description { get; set; }
-         public string TransactionHash { get; set; }
+        public string TransactionHash { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

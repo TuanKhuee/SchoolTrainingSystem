@@ -14,7 +14,7 @@ namespace Services
 {
     public class WalletService
     {
-         private readonly IWeb3 _web3;
+        private readonly IWeb3 _web3;
         private readonly ILogger<WalletService> _logger;
         private readonly ApplicationDbContext _context;
         private readonly BlockchainService _blockchainService;
@@ -81,10 +81,10 @@ namespace Services
                 // Get VKU coin contract address from blockchain service
                 var coinAddress = _blockchainService.VkuCoinAddress;
                 _logger.LogInformation($"Using VKU coin contract address: {coinAddress}");
-                
+
                 // Get contract ABI directly from BlockchainService
                 var contractAbi = await _blockchainService.LoadAbi("VkuCoin");
-                
+
                 // Create contract instance
                 var contract = _web3.Eth.GetContract(contractAbi, coinAddress);
                 if (contract == null)
@@ -124,12 +124,12 @@ namespace Services
                     _logger.LogError(ex, "Error calling balanceOf function");
                     throw new Exception($"Failed to get balance: {ex.Message}", ex);
                 }
-                
+
                 // Convert based on token's decimals
                 var balanceInToken = Web3.Convert.FromWei(balance, decimals);
-                
+
                 _logger.LogInformation($"Retrieved VKU token balance for {address}: {balanceInToken}");
-                
+
                 return balanceInToken;
             }
             catch (Exception ex)
@@ -157,7 +157,7 @@ namespace Services
                 var adminUser = await _context.Users
                     .Include(u => u.Wallet)
                     .FirstOrDefaultAsync(u => u.Role == "Admin");
-                
+
                 if (adminUser?.Wallet == null)
                     return new TransactionResult(false, "Không tìm thấy ví admin");
 
@@ -177,9 +177,9 @@ namespace Services
                         user.Wallet.Address,       // toAddress
                         coinAmount                 // amount
                     );
-                    
+
                     _logger.LogInformation($"Transfer transaction submitted with hash: {transferResult.TransactionHash}, success: {transferResult.Success}");
-                    
+
                     if (!transferResult.Success)
                     {
                         return new TransactionResult(false, $"Giao dịch blockchain thất bại, hash: {transferResult.TransactionHash}");
@@ -197,7 +197,8 @@ namespace Services
                 // Add transaction log entry
                 _context.TransactionLogs.Add(new TransactionLog
                 {
-                    UserId = userId,
+                    UserId = adminUser.Id,
+                    RecipientId = userId,
                     Amount = coinAmount,
                     TransactionType = "ActivityReward",
                     Description = $"Nhận coin từ hoạt động {activityName}",
@@ -208,7 +209,7 @@ namespace Services
                 // Update wallet balances in database
                 adminUser.Wallet.Balance -= coinAmount;
                 user.Wallet.Balance += coinAmount;
-                
+
                 await _context.SaveChangesAsync();
 
                 // Synchronize the actual balance from blockchain to ensure accuracy
@@ -236,17 +237,17 @@ namespace Services
                 // Get VKU coin contract address from blockchain service
                 var coinAddress = _blockchainService.VkuCoinAddress;
                 _logger.LogInformation($"Using VKU coin contract address: {coinAddress}");
-                
+
                 // Verify contract address is valid
                 if (string.IsNullOrEmpty(coinAddress) || !coinAddress.StartsWith("0x"))
                 {
                     _logger.LogError($"Invalid contract address: {coinAddress}");
                     throw new Exception($"Invalid contract address: {coinAddress}");
                 }
-                
+
                 // Get contract ABI directly from BlockchainService to avoid async issues
                 var contractAbi = await _blockchainService.LoadAbi("VkuCoin");
-                
+
                 // More robust contract instance creation
                 var contract = _web3.Eth.GetContract(contractAbi, coinAddress);
                 if (contract == null)
@@ -254,7 +255,7 @@ namespace Services
                     _logger.LogError($"Failed to get contract instance for {coinAddress}");
                     throw new Exception("Failed to create contract instance");
                 }
-                
+
                 // Log contract functions for debugging
                 _logger.LogInformation($"Contract functions: {string.Join(", ", contract.ContractBuilder.ContractABI.Functions.Select(f => f.Name))}");
 
@@ -282,28 +283,28 @@ namespace Services
                         _logger.LogError("Contract doesn't have balanceOf function!");
                         throw new Exception("Contract doesn't have balanceOf function");
                     }
-                    
+
                     var balanceFunction = contract.GetFunction("balanceOf");
                     _logger.LogInformation($"Calling balanceOf function for address: {address}");
-                    
+
                     // Verify address format
                     if (string.IsNullOrEmpty(address) || !address.StartsWith("0x"))
                     {
                         _logger.LogError($"Invalid wallet address format: {address}");
                         throw new Exception($"Invalid wallet address format: {address}");
                     }
-                    
+
                     balance = await balanceFunction.CallAsync<BigInteger>(address);
                     _logger.LogInformation($"Raw balance: {balance}");
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error calling balanceOf function");
-                    
+
                     // Fallback to getting existing database balance
                     var existingWallet = await _context.Wallets
                         .FirstOrDefaultAsync(w => w.Address == address);
-                        
+
                     return existingWallet?.Balance ?? 0;
                 }
 
@@ -335,7 +336,7 @@ namespace Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error syncing VKU token balance for wallet {address}");
-                
+
                 // Return existing database balance if blockchain query fails
                 var existingWallet = await _context.Wallets
                     .FirstOrDefaultAsync(w => w.Address == address);

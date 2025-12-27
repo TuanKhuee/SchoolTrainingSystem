@@ -171,7 +171,8 @@ namespace Services
                 _context.TransactionLogs.Add(new TransactionLog
                 {
                     UserId = studentId,
-                    Amount = (int)totalAmount,
+                    RecipientId = staff.Id,
+                    Amount = -(int)totalAmount,
                     TransactionType = "Purchase",
                     Description = $"Checkout payment to staff {staff.Id}",
                     TransactionHash = transferResult.TransactionHash,

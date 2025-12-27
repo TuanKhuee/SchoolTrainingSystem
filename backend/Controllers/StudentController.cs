@@ -356,10 +356,12 @@ namespace backend.Controllers
                 student.TrainingPoints += (int)(request.Amount / 10);
 
                 // Add transaction log
+                var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.Role == "Admin");
                 _context.TransactionLogs.Add(new TransactionLog
                 {
                     UserId = userId,
-                    Amount = request.Amount,
+                    RecipientId = adminUser?.Id,
+                    Amount = -request.Amount,
                     TransactionType = "CONVERT_TO_POINTS",
                     Description = $"Converted {request.Amount} coins to {request.Amount / 10} training points",
                     TransactionHash = transferResult.TransactionHash,

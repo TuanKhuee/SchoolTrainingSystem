@@ -70,18 +70,22 @@ namespace backend.Controllers.StaffController
             var userId = User.FindFirstValue("UserId");
 
             var transactions = await _context.TransactionLogs
-                .Where(t => t.UserId == userId)
+                .Include(t => t.User)
+                .Include(t => t.Recipient)
+                .Where(t => t.UserId == userId || t.RecipientId == userId)
                 .OrderByDescending(t => t.CreatedAt)
                 .Select(t => new
                 {
                     t.Id,
-                    t.Amount,
+                    Amount = t.RecipientId == userId ? Math.Abs(t.Amount) : t.Amount,
                     t.TransactionType,
                     t.Description,
                     t.TransactionHash,
                     t.CreatedAt,
-                    Sender = "Hệ thống" // Default sender since we check ActivityReward mostly. 
-                                        // Future improvement: Add SenderId to TransactionLog
+                    Sender = t.RecipientId == userId
+                        ? (t.User != null ? t.User.UserName ?? t.User.FullName : "Hệ thống")
+                        : "Bạn",
+                    IsIncoming = t.RecipientId == userId
                 })
                 .ToListAsync();
 

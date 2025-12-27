@@ -102,6 +102,11 @@ namespace Data
                     .WithMany()
                     .HasForeignKey(t => t.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(t => t.Recipient)
+                    .WithMany()
+                    .HasForeignKey(t => t.RecipientId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // === ParentInfo ===
