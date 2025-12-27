@@ -28,11 +28,13 @@ export function ActivityQRCode({ activityId, activityName }: ActivityQRCodeProps
     try {
       const response = await http.get(`/admin/activities/${activityId}/qrcode`);
       setQrCodeUrl(response.qrCodeUrl);
-      
-      // Create the full URL by combining the base API URL with the relative QR code URL
-      const fullUrl = `${API_BASE_URL}${response.qrCodeUrl}`;
+
+      // Use relative URL - browser will automatically use the current protocol (http or https)
+      // This prevents mixed content errors when deployed to HTTPS
+      const fullUrl = response.qrCodeUrl;
       setFullQrCodeUrl(fullUrl);
-      
+
+
       setExpiration(new Date(response.qrCodeExpiration));
       setIsLoading(false);
     } catch (error) {
@@ -48,7 +50,7 @@ export function ActivityQRCode({ activityId, activityName }: ActivityQRCodeProps
 
   const handleDownload = () => {
     if (!fullQrCodeUrl) return;
-    
+
     // Create a temporary link element
     const link = document.createElement("a");
     link.href = fullQrCodeUrl;
@@ -74,26 +76,26 @@ export function ActivityQRCode({ activityId, activityName }: ActivityQRCodeProps
         ) : fullQrCodeUrl ? (
           <div className="flex flex-col items-center gap-4">
             <div className="bg-white p-4 rounded-lg shadow-sm">
-              <img 
-                src={fullQrCodeUrl} 
-                alt={`QR Code for ${activityName}`} 
+              <img
+                src={fullQrCodeUrl}
+                alt={`QR Code for ${activityName}`}
                 className="w-64 h-64 object-contain"
               />
             </div>
-            
+
             {expiration && (
               <p className="text-sm text-gray-500">
                 Expires on: {format(expiration, "PPP 'at' p")}
               </p>
             )}
-            
+
             <div className="flex gap-2 mt-2">
               <Button onClick={handleDownload} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Download QR Code
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={fetchQRCode}
                 className="flex items-center gap-2"
               >
