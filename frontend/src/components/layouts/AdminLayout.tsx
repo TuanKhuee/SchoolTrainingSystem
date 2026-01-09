@@ -126,7 +126,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
               </h1>
             </div>
           </div>
-          <p className="text-indigo-100 text-sm">Admin Portal</p>
+          <p className="text-indigo-100 text-sm">ADMIN PORTAL</p>
         </div>
         <nav className="p-4">
           <ul className="space-y-2">
