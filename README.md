@@ -33,7 +33,7 @@ The easiest way to run the entire stack locally is by using Docker and Docker Co
     *This will download the necessary base images, build the backend, frontend, and blockchain containers, and start them.*
 
 3.  **Access the applications:**
-    *   **Frontend (Web UI)**: `http://localhost:3001`
+    *   **Frontend (Web UI)**: `http://localhost:3000`
     *   **Backend (API + Swagger)**: `http://localhost:5000/swagger`
     *   **SQL Server**: `localhost:1433` (User: `sa`, Password: `EduChain@2024!`)
     *   **Blockchain Node**: `http://localhost:8545`
